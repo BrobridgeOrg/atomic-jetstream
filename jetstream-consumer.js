@@ -66,47 +66,32 @@ module.exports = function(RED) {
 				return;
 			}
 
-			let client = new Client(this.server.getOpts());
-
 			try {
-				setStatus('connecting');
-
-				node.log('Connecting to JetStream server:' + this.server.getOpts().server)
-
 				// Connect to JetStream Cluster
-				await client.connect()
+				let client = await this.server.getClient();
 
 				client.on('disconnect', () => {
-					node.log('Disconnected from JetStream server')
 					setStatus('disconnected');
 				});
 
 				client.on('reconnect', () => {
-					node.log('Reconnecting to JetStream server')
 					setStatus('connecting');
 				});
-			} catch(e) {
-				node.error(e);
-				setStatus('disconnected');
-				return;
-			}
 
-			if (!config.subjects) {
-				setStatus('connected');
-				return;
-			}
+				if (!config.subjects) {
+					setStatus('connected');
+					return;
+				}
 
-			setStatus('initializing');
+				setStatus('initializing');
 
-			// Preparing consumer options
-			let opts = {
-				delivery: config.delivery || 'last',
-				ack: config.ack || 'auto',
-				startSeq: Number(config.startseq),
-				startTime: new Date(Number(config.starttime) * 1000),
-			};
-
-			try {
+				// Preparing consumer options
+				let opts = {
+					delivery: config.delivery || 'last',
+					ack: config.ack || 'auto',
+					startSeq: Number(config.startseq),
+					startTime: new Date(Number(config.starttime) * 1000),
+				};
 
 				let autoAck = (opts.ack === 'auto') ? true : false;
 
@@ -125,7 +110,6 @@ module.exports = function(RED) {
 						}
 					}
 
-					console.log(config.payloadType);
 					switch(config.payloadType) {
 					case 'json':
 						msg.payload.data = JSON.parse(m.data);
@@ -136,8 +120,6 @@ module.exports = function(RED) {
 					default:
 						msg.payload.data = m.data;
 					}
-
-					console.log(msg);
 
 					node.send(msg);
 

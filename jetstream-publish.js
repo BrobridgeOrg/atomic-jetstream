@@ -44,15 +44,9 @@ module.exports = function(RED) {
 				return;
 			}
 
-			let client = new Client(this.server.getOpts());
-
 			try {
-				setStatus('connecting');
-
-				node.log('Connecting to JetStream server:' + this.server.getOpts().server)
-
 				// Connect to JetStream Cluster
-				await client.connect()
+				let client = await this.server.getClient();
 
 				client.on('disconnect', () => {
 					setStatus('disconnected');
@@ -61,46 +55,47 @@ module.exports = function(RED) {
 				client.on('reconnect', () => {
 					setStatus('connecting');
 				});
+
+				setStatus('connected');
+
+				node.on('input', async (msg, send, done) => {
+
+					let subject = msg.subject || config.subject;
+					if (!subject) {
+						return done();
+					}
+
+					try {
+
+						switch(config.payloadType) {
+						case 'json':
+							if (typeof msg.payload === 'string') {
+								await client.publishString(subject, msg.payload);
+							} else {
+								await client.publishJSON(subject, msg.payload);
+							}
+							break;
+						case 'string':
+							await client.publishString(subject, msg.payload);
+							break;
+						default:
+							await client.publish(subject, msg.payload);
+						}
+
+						done();
+					} catch(e) {
+						node.error(e);
+					}
+				});
+
+				node.on('close', () => {
+					client.disconnect();
+				});
+
 			} catch(e) {
 				node.error(e);
 				return;
 			}
-
-			setStatus('connected');
-
-			node.on('input', async (msg, send, done) => {
-
-				let subject = msg.subject || config.subject;
-				if (!subject) {
-					return done();
-				}
-
-				try {
-
-					switch(config.payloadType) {
-					case 'json':
-						if (typeof msg.payload === 'string') {
-							await client.publishString(subject, msg.payload);
-						} else {
-							await client.publishJSON(subject, msg.payload);
-						}
-						break;
-					case 'string':
-						await client.publishString(subject, msg.payload);
-						break;
-					default:
-						await client.publish(subject, msg.payload);
-					}
-
-					done();
-				} catch(e) {
-					node.error(e);
-				}
-			});
-
-			node.on('close', () => {
-				client.disconnect();
-			});
 
 		})();
     }
