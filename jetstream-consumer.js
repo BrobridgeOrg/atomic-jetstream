@@ -125,6 +125,7 @@ module.exports = function(RED) {
 						}
 					}
 
+					console.log(config.payloadType);
 					switch(config.payloadType) {
 					case 'json':
 						msg.payload.data = JSON.parse(m.data);
@@ -135,6 +136,8 @@ module.exports = function(RED) {
 					default:
 						msg.payload.data = m.data;
 					}
+
+					console.log(msg);
 
 					node.send(msg);
 

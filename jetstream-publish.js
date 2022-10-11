@@ -79,7 +79,11 @@ module.exports = function(RED) {
 
 					switch(config.payloadType) {
 					case 'json':
-						await client.publishJSON(subject, msg.payload);
+						if (typeof msg.payload === 'string') {
+							await client.publishString(subject, msg.payload);
+						} else {
+							await client.publishJSON(subject, msg.payload);
+						}
 						break;
 					case 'string':
 						await client.publishString(subject, msg.payload);

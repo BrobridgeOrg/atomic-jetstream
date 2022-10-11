@@ -13,7 +13,6 @@ module.exports = function(RED) {
 
 			let m = msg.jetstream.getMsg();
 			if (!m.didAck) {
-				console.log('ACK')
 				m.ack();
 			}
 
