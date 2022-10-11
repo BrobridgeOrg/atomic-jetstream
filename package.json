@@ -1,0 +1,26 @@
+{
+  "name": "atomic-jetstream",
+  "version": "0.0.1",
+  "description": "NATS JetStream module for Brobridge Atomic",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "jetstream",
+    "node-red",
+    "atomic"
+  ],
+  "author": "Fred Chien <fred@brobridge.com>",
+  "license": "MIT",
+  "node-red": {
+    "nodes": {
+      "jetstream-consumer": "jetstream-consumer.js",
+      "jetstream-publish": "jetstream-publish.js",
+      "jetstream-server": "jetstream-server.js",
+      "jetstream-acknowledge": "jetstream-acknowledge.js"
+    }
+  },
+  "dependencies": {
+    "nats": "^2.7.1"
+  }
+}

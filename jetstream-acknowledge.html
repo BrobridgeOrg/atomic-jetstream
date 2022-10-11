@@ -1,0 +1,28 @@
+<script type="text/javascript">
+	RED.nodes.registerType('NATS JetStream Acknowledge', {
+		category: 'function',
+		color: '#00bb88',
+		defaults: {
+			name: {
+				value: ""
+			},
+		},
+		inputs: 1,
+		outputs: 0,
+		icon: 'nats-icon-white.png',
+		label: function() {
+				return this.name || 'NATS JetStream Acknowledge';
+			}
+	});
+</script>
+
+<script type="text/x-red" data-template-name="NATS JetStream Acknowledge">
+		<div class="form-row">
+        <label for="node-input-name"><i class="fa fa-stack-exchange"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+</script>
+
+<script type="text/html" data-help-name="NATS JetStream Acknowledge">
+	<p>The function to acknowledge the message from JetStream server</p>
+</script>

@@ -1,0 +1,59 @@
+<script type="text/javascript">
+	RED.nodes.registerType('NATS JetStream Publish', {
+		category: 'function',
+		color: '#00bb88',
+		credentials: {
+			accessToken: { type: 'text' }
+		},
+		defaults: {
+			name: {
+				value: ""
+			},
+			server: {
+				value: "",
+				type: "NATS JetStream Server"
+			},
+			subject: {
+				value: ""
+			},
+			payloadType: {
+				value: "json"
+			},
+		},
+		inputs: 1,
+		outputs: 0,
+		icon: 'nats-icon-white.png',
+		label: function() {
+			return this.name || 'NATS JetStream Publish';
+		},
+		oneditprepare: function() {
+		}
+	});
+</script>
+
+<script type="text/x-red" data-template-name="NATS JetStream Publish">
+	<div class="form-row">
+        <label for="node-input-name" style="width: 130px"><i class="fa fa-stack-exchange"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+    <div class="form-row">
+        <label for="node-input-server" style="width: 130px"><i class="fa fa-server"></i> Server</label>
+        <input type="text" id="node-input-server" placeholder="localhost:4222">
+    </div>
+	<div class="form-row">
+        <label for="node-input-subject" style="width: 130px"><i class="fa fa-stack-exchange"></i> Subject</label>
+        <input type="text" id="node-input-subject" placeholder="Subject">
+    </div>
+	<div class="form-row">
+        <label for="node-input-payloadType" style="width: 130px"><i class="fa fa-stack-exchange"></i> Payload Type</label>
+		<select id="node-input-payloadType" style='width:70%'>
+			<option value="json">JSON</option>
+			<option value="string">String</option>
+			<option value="buffer">Buffer</option>
+		</select>
+    </div>
+</script>
+
+<script type="text/html" data-help-name="NATS JetStream Publish">
+	<p>Publish messages to NATS JetStream Server</p>
+</script>

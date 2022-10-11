@@ -1,0 +1,30 @@
+<script type="text/javascript">
+    RED.nodes.registerType('NATS JetStream Server',{
+        category: 'config',
+        defaults: {
+            server: {
+				value: 'localhost',
+				required: true
+			},
+            port: {
+				value: 4222,
+				required: true,
+				validate: RED.validators.number()
+			},
+        },
+        label: function() {
+            return this.server + ':' + this.port;
+        }
+    });
+</script>
+
+<script type="text/x-red" data-template-name="NATS JetStream Server">
+    <div class="form-row">
+        <label for="node-config-input-server"><i class="icon-bookmark"></i> Server</label>
+        <input type="text" id="node-config-input-server">
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-port"><i class="icon-bookmark"></i> Port</label>
+        <input type="text" id="node-config-input-port">
+    </div>
+</script>
