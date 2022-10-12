@@ -47,6 +47,7 @@ module.exports = function(RED) {
 			try {
 				// Connect to JetStream Cluster
 				let client = await this.server.getClient();
+				this.server.refClient();
 
 				client.on('disconnect', () => {
 					setStatus('disconnected');
@@ -89,7 +90,7 @@ module.exports = function(RED) {
 				});
 
 				node.on('close', () => {
-					client.disconnect();
+					this.server.unrefClient();
 				});
 
 			} catch(e) {

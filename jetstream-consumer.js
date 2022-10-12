@@ -55,9 +55,16 @@ module.exports = function(RED) {
 
 		setStatus('disconnected');
 
-		// Initializing NATS JetStream client
-		let nats = require('nats');
-		let Client = require('./client');
+		// heartbeat for message
+		let wip = {};
+		let heartbeat = setInterval(() => {
+			Object.values(wip).forEach((m) => {
+				if (m.didAck)
+					return;
+
+				m.working();
+			})
+		}, 5000);
 
 		(async () => {
 
@@ -69,6 +76,7 @@ module.exports = function(RED) {
 			try {
 				// Connect to JetStream Cluster
 				let client = await this.server.getClient();
+				this.server.refClient();
 
 				client.on('disconnect', () => {
 					setStatus('disconnected');
@@ -76,6 +84,11 @@ module.exports = function(RED) {
 
 				client.on('reconnect', () => {
 					setStatus('connecting');
+				});
+
+				node.on('close', async () => {
+					clearInterval(heartbeat);
+					this.server.unrefClient();
 				});
 
 				if (!config.subjects) {
@@ -91,18 +104,29 @@ module.exports = function(RED) {
 					ack: config.ack || 'auto',
 					startSeq: Number(config.startseq),
 					startTime: new Date(Number(config.starttime) * 1000),
+					ackWait: Number(config.ackwait),
+					queue: config.queue,
 				};
 
 				let autoAck = (opts.ack === 'auto') ? true : false;
 
 				// Subscribe to subjects
-				await client.subscribe(config.subjects, config.durable, opts, (m) => {
+				let sub = await client.subscribe(config.subjects, config.durable, opts, (m) => {
+
+					// Wait message until done
+					if (opts.ackWait <= 0 && !autoAck) {
+						wip[m.seq] = m;
+					}
 
 					let msg = {
 						jetstream: {
 							getMsg: () => {
 								return m
 							},
+							ack: () => {
+								delete wip[m.seq];
+								m.ack();
+							}
 						},
 						payload: {
 							seq: m.seq,
@@ -126,17 +150,18 @@ module.exports = function(RED) {
 					// Sent acknoledgement automatically
 					if (autoAck && !m.didAck) {
 						m.ack();
+						return;
 					}
 				});
+
+				node.on('close', async () => {
+					sub.unsubscribe();
+				});
+
 			} catch(e) {
 				node.error(e);
 				return
 			}
-
-			node.on('close', async () => {
-				client.disconnect();
-			});
-
 			setStatus('connected');
 		})();
     }

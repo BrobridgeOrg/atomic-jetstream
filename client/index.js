@@ -118,6 +118,14 @@ module.exports = class Client extends events.EventEmitter {
 			cOpts.durable(durable);
 		}
 
+		if (opts.ackWait) {
+			cOpts.ackWait(opts.ackWait || 10000);
+		}
+
+		if (opts.queue) {
+			cOpts.queue(opts.queue);
+		}
+
 		// Subscribe
 		let js = this.nc.jetstream();
 

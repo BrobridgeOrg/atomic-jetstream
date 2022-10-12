@@ -22,6 +22,9 @@
 			durable: {
 				value: '',
 			},
+			queue: {
+				value: '',
+			},
 			startseq: {
 				value: 0,
 			},
@@ -30,6 +33,9 @@
 			},
 			ack: {
 				value: 'auto',
+			},
+			ackwait: {
+				value: 10000,
 			},
 			payloadType: {
 				value: "json"
@@ -74,6 +80,27 @@
 			$('#node-input-starttime').typedInput({
 				type: "num"
 			});
+
+			// Acknowledge
+			function updateAckOptions() {
+				switch($('#node-input-ack').val()) {
+				case 'manual':
+					$('#node-row-ackmanual').show();
+					break;
+				default:
+					$('#node-row-ackmanual').hide();
+				}
+			}
+
+			updateAckOptions();
+            $("#node-input-ack").on("change", function() {
+				updateAckOptions();
+            });
+
+			// Initialize inputs
+			$('#node-input-ackwait').typedInput({
+				type: "num"
+			});
         }
     });
 </script>
@@ -96,6 +123,10 @@
 		<input type="text" id="node-input-durable" placeholder="(Ephemeral)">
 	</div>
 	<div class="form-row">
+		<label for="node-input-queue" style="width: 130px"><i class="fa fa-sitemap"></i> Queue Group</label>
+		<input type="text" id="node-input-queue" placeholder="(None)">
+	</div>
+	<div class="form-row">
         <label for="node-input-delivery" style="width: 130px"><i class="fa fa-play"></i> Delivery Options</label>
 		<select id="node-input-delivery" style='width:70%'>
 			<option value="last">Last</option>
@@ -107,13 +138,13 @@
 		<div id="node-row-startseq" style="margin-left: 30px; margin-top: 10px;" class="hide">
 			<div class="form-row">
 				<label for="node-input-startseq"><i class="fa fa-map-marker"></i> Sequence</label>
-				<input type="text" id="node-input-startseq" placeholder="0">
+				<input type="text" id="node-input-startseq" style="width:100px" placeholder="0">
 			</div>
 		</div>
 		<div id="node-row-starttime" style="margin-left: 30px; margin-top: 10px;" class="hide">
 			<div class="form-row">
 				<label for="node-input-starttime"><i class="fa fa-history"></i> Timestamp</label>
-				<input type="text" id="node-input-starttime" placeholder="0">
+				<input type="text" id="node-input-starttime" style="width:100px" placeholder="0">
 			</div>
 		</div>
     </div>
@@ -123,6 +154,12 @@
 			<option value="auto">Auto</option>
 			<option value="manual">Manual</option>
 		</select>
+		<div id="node-row-ackmanual" style="margin-left: 30px; margin-top: 10px;" class="hide">
+			<div class="form-row">
+				<label for="node-input-ackwait"><i class="fa fa-history"></i> Wait time</label>
+				<input type="text" id="node-input-ackwait" style="width:100px" placeholder="0"> ms
+			</div>
+		</div>
     </div>
 	<div class="form-row">
         <label for="node-input-payloadType" style="width: 130px"><i class="fa fa-stack-exchange"></i> Payload Type</label>

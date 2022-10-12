@@ -13,7 +13,7 @@ module.exports = function(RED) {
 
 			let m = msg.jetstream.getMsg();
 			if (!m.didAck) {
-				m.ack();
+				msg.jetstream.ack();
 			}
 
 			if (done) {
