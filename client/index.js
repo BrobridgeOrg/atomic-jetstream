@@ -47,12 +47,30 @@ module.exports = class Client extends events.EventEmitter {
 		await this.nc.close();
 	}
 
-	getDomain() {
-		return this.opts.domain;
+	async createStream(streamName, subjects = []) {
+
+		let jsm = await this.nc.jetstreamManager();
+
+		await jsm.streams.add({
+			name: streamName,
+			subjects: subjects
+		});
 	}
 
-	getConnectionStates() {
-		return this.connStates;
+	async ensureStream(streamName, subjects = []) {
+
+		let jsm = await this.nc.jetstreamManager();
+
+		try {
+			let info = await jsm.streams.info(streamName)
+			return;
+		} catch(e) {
+
+			// Not found
+			if (e.code === '404') {
+				return await this.createStream(streamName, subjects)
+			}
+		}
 	}
 
 	async publish(subject, payload) {

@@ -19,6 +19,12 @@
 			delivery: {
 				value: 'last',
 			},
+			stream: {
+				value: 'none',
+			},
+			ensurestream: {
+				value: '',
+			},
 			durable: {
 				value: '',
 			},
@@ -51,6 +57,23 @@
 
 			let node = this;
 
+			// Stream
+			function updateStreamOptions() {
+				switch($('#node-input-stream').val()) {
+				case 'ensure':
+					$('#node-row-ensurestream').show();
+					break;
+				default:
+					$('#node-row-ensurestream').hide();
+				}
+			}
+
+			updateStreamOptions();
+            $("#node-input-stream").on("change", function() {
+				updateStreamOptions();
+            });
+
+			// Delivery
 			function updateDeliveryOptions() {
 				switch($('#node-input-delivery').val()) {
 				case 'startSeq':
@@ -113,6 +136,19 @@
     <div class="form-row">
         <label for="node-input-server" style="width: 130px"><i class="fa fa-server"></i> Server</label>
         <input type="text" id="node-input-server" placeholder="localhost:4222">
+    </div>
+	<div class="form-row">
+        <label for="node-input-stream" style="width: 130px"><i class="fa fa-archive"></i> Stream Options</label>
+		<select id="node-input-stream" style='width:70%'>
+			<option value="none">No specified stream</option>
+			<option value="ensure">Ensure stream exists</option>
+		</select>
+		<div id="node-row-ensurestream" style="margin-left: 30px; margin-top: 10px;" class="hide">
+			<div class="form-row">
+				<label for="node-input-ensurestream"><i class="fa fa-inbox"></i> Stream</label>
+				<input type="text" id="node-input-ensurestream" style="width: 70%;" placeholder="(Stream)">
+			</div>
+		</div>
     </div>
 	<div class="form-row">
 		<label for="node-input-subjects" style="width: 130px"><i class="fa fa-hashtag"></i> Subjects</label>

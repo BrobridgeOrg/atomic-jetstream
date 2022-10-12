@@ -98,6 +98,11 @@ module.exports = function(RED) {
 
 				setStatus('initializing');
 
+				// Ensure stream
+				if (config.stream === 'ensure') {
+					await client.ensureStream(config.ensurestream, [ config.subjects ]);
+				}
+
 				// Preparing consumer options
 				let opts = {
 					delivery: config.delivery || 'last',
