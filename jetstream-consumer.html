@@ -15,18 +15,24 @@
 			},
 			subjects: {
 				value: '',
+				required: true,
 			},
 			delivery: {
 				value: 'last',
+				required: true
 			},
 			stream: {
 				value: 'none',
+				required: true
 			},
 			ensurestream: {
 				value: '',
+				type: 'NATS JetStream Stream',
+				required: false
 			},
 			consumertype: {
 				value: 'ephemeral',
+				required: true
 			},
 			durable: {
 				value: '',
@@ -39,12 +45,14 @@
 			},
 			ack: {
 				value: 'auto',
+				required: true
 			},
 			ackwait: {
 				value: 10000,
 			},
 			payloadType: {
-				value: "json"
+				value: "json",
+				required: true
 			},
 		},
 		inputs: 0,
@@ -173,7 +181,7 @@
 		<div id="node-row-ensurestream" style="margin-left: 30px; margin-top: 10px;" class="hide">
 			<div class="form-row">
 				<label for="node-input-ensurestream"><i class="fa fa-inbox"></i> Stream</label>
-				<input type="text" id="node-input-ensurestream" style="width: 70%;" placeholder="(Stream)">
+				<input type="text" id="node-input-ensurestream" style="width: 70%;">
 			</div>
 		</div>
     </div>

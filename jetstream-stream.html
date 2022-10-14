@@ -1,0 +1,68 @@
+<script type="text/javascript">
+    RED.nodes.registerType('NATS JetStream Stream',{
+        category: 'config',
+        defaults: {
+            stream: {
+				value: '',
+				required: true
+			},
+            description: {
+				value: '',
+			},
+            subjects: {
+				value: '',
+				required: true
+			},
+            max_msgs: {
+				value: -1,
+				required: true
+			},
+            max_age: {
+				value: 0,
+				required: true
+			},
+            max_bytes: {
+				value: -1,
+				required: true
+			},
+            num_replicas: {
+				value: 1,
+				required: true
+			},
+        },
+        label: function() {
+            return this.stream || 'NATS JetStream Stream';
+        }
+    });
+</script>
+
+<script type="text/x-red" data-template-name="NATS JetStream Stream">
+    <div class="form-row">
+        <label for="node-config-input-stream" style="width: 130px"><i class="fa fa-inbox"></i> Stream Name</label>
+        <input type="text" id="node-config-input-stream">
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-description" style="width: 130px"><i class="fa fa-comments"></i> Description</label>
+        <input type="text" id="node-config-input-description">
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-subjects" style="width: 130px"><i class="fa fa-comments"></i> Subjects</label>
+        <input type="text" id="node-config-input-subjects">
+    </div>
+	<div class="form-row">
+		<label for="node-input-max_msgs" style="width: 130px"><i class="fa fa-message"></i> Max Msgs</label>
+		<input type="text" id="node-input-max_msgs" placeholder="-1" style="width: 150px"> msgs
+	</div>
+	<div class="form-row">
+		<label for="node-input-max_age" style="width: 130px"><i class="fa fa-history"></i> Max Age</label>
+		<input type="text" id="node-input-max_age" placeholder="0">
+	</div>
+	<div class="form-row">
+		<label for="node-input-max_bytes" style="width: 130px"><i class="fa fa-th"></i> Max Bytes</label>
+		<input type="text" id="node-input-max_bytes" placeholder="-1">
+	</div>
+	<div class="form-row">
+		<label for="node-input-num_replicas" style="width: 130px"><i class="fa fa-clone"></i> Replicas</label>
+		<input type="text" id="node-input-num_replicas" placeholder="1">
+	</div>
+</script>

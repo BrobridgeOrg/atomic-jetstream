@@ -76,7 +76,13 @@ module.exports = function(RED) {
 
 		// Ensure stream
 		if (node.config.stream === 'ensure') {
-			await client.ensureStream(node.config.ensurestream, [ node.config.subjects ]);
+
+			let streamNode = RED.nodes.getNode(node.config.ensurestream);
+
+			if (!streamNode)
+				throw new Error('No specific stream');
+
+			await client.ensureStream(streamNode.config.stream, streamNode.config.subjects, streamNode.getOptions());
 		}
 
 		// Preparing consumer options

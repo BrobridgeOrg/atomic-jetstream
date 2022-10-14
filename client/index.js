@@ -65,17 +65,18 @@ module.exports = class Client extends events.EventEmitter {
 		}
 	}
 
-	async createStream(streamName, subjects = []) {
+	async createStream(streamName, subjects = [], opts = {}) {
 
 		let jsm = await this.nc.jetstreamManager();
 
-		await jsm.streams.add({
+		console.log(opts);
+		await jsm.streams.add(Object.assign(opts, {
 			name: streamName,
 			subjects: subjects
-		});
+		}));
 	}
 
-	async ensureStream(streamName, subjects = []) {
+	async ensureStream(streamName, subjects = [], opts = {}) {
 
 		let jsm = await this.nc.jetstreamManager();
 
@@ -86,7 +87,7 @@ module.exports = class Client extends events.EventEmitter {
 
 			// Not found
 			if (e.code === '404') {
-				return await this.createStream(streamName, subjects)
+				return await this.createStream(streamName, subjects, opts);
 			}
 
 			throw e;

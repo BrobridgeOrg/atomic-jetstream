@@ -17,7 +17,8 @@
       "jetstream-consumer": "jetstream-consumer.js",
       "jetstream-publish": "jetstream-publish.js",
       "jetstream-server": "jetstream-server.js",
-      "jetstream-acknowledge": "jetstream-acknowledge.js"
+      "jetstream-acknowledge": "jetstream-acknowledge.js",
+      "jetstream-stream": "jetstream-stream.js"
     }
   },
   "dependencies": {
