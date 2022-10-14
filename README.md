@@ -1,2 +1,3 @@
 # atomic-jetstream
-Atomic Module for NATS JetStream
+
+Module for NATS JetStream Messaging.
