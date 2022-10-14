@@ -7,58 +7,38 @@ module.exports = function(RED) {
 
 		// Getting server information from gravity server node
 		this.server = RED.nodes.getNode(config.server)
+		this.config = config;
 
-		function setStatus(type) {
-			switch(type) {
-			case 'connected':
-				node.status({
-					fill: 'green',
-					shape: 'dot',
-					text: 'connected'
-				});
-				break;
-			case 'connecting':
-				node.status({
-					fill: 'yellow',
-					shape: 'ring',
-					text: 'connecting'
-				});
-				break;
-			case 'initializing':
-				node.status({
-					fill: 'yellow',
-					shape: 'ring',
-					text: 'initializing'
-				});
-				break;
-			case 'disconnected':
-				node.status({
-					fill: 'red',
-					shape: 'ring',
-					text: 'disconnected'
-				});
-				break;
-			case 'receiving':
-				node.status({
-					fill: 'blue',
-					shape: 'ring',
-					text: 'receiving'
-				});
-				break;
-			}
+		setStatus(node, 'disconnected');
+
+		if (!this.server) {
+			setStatus(node, 'disconnected');
+			return;
 		}
 
-		function ack() {
-			this.ack();
-			setStatus('connected');
-		}
+		// Preparing client
+		let client = null;
+		let jsMgr = this.server.getInstance()
+		jsMgr.once('ready', () => {
 
-		setStatus('disconnected');
+			setStatus(jsMgr.status)
 
+			// Getting a client
+			client = this.server.allocateClient();
+
+			init(node, client)
+				.then(() => {
+					setStatus(node, 'connected');
+				})
+				.catch((e) => {
+					node.error(e);
+				});
+		});
+		
 		// heartbeat for message
-		let wip = {};
+		this.wip = {};
 		let heartbeat = setInterval(() => {
-			Object.values(wip).forEach((m) => {
+			Object.values(node.wip).forEach((m) => {
 				if (m.didAck)
 					return;
 
@@ -66,110 +46,138 @@ module.exports = function(RED) {
 			})
 		}, 5000);
 
-		(async () => {
+		node.on('close', async () => {
+			clearInterval(heartbeat);
+			this.server.releaseClient(client);
+		});
+    }
 
-			if (!this.server) {
-				setStatus('disconnected');
+	async function init(node, client) {
+
+		// Setup events
+		client.on('disconnect', () => {
+			setStatus(node, 'disconnected');
+		});
+
+		client.on('reconnect', () => {
+			setStatus(node, 'connecting');
+		});
+
+		client.on('connected', () => {
+			setStatus(node, 'connecting');
+		});
+
+		if (!node.config.subjects) {
+			return;
+		}
+
+		setStatus(node, 'initializing');
+
+		// Ensure stream
+		if (node.config.stream === 'ensure') {
+			await client.ensureStream(node.config.ensurestream, [ node.config.subjects ]);
+		}
+
+		// Preparing consumer options
+		let opts = {
+			delivery: node.config.delivery || 'last',
+			ack: node.config.ack || 'auto',
+			startSeq: Number(node.config.startseq),
+			startTime: new Date(Number(node.config.starttime) * 1000),
+			ackWait: Number(node.config.ackwait),
+			queue: node.config.queue,
+		};
+
+		let autoAck = (opts.ack === 'auto') ? true : false;
+
+		// Subscribe to subjects
+		let sub = await client.subscribe(node.config.subjects, node.config.durable, opts, (m) => {
+
+			// Wait message until done
+			if (opts.ackWait <= 0 && !autoAck) {
+				node.wip[m.seq] = m;
+			}
+
+			let msg = {
+				jetstream: {
+					getMsg: () => {
+						return m
+					},
+					ack: () => {
+						delete node.wip[m.seq];
+						m.ack();
+					}
+				},
+				payload: {
+					seq: m.seq,
+					subject: m.subject,
+				}
+			}
+
+			switch(node.config.payloadType) {
+			case 'json':
+				msg.payload.data = JSON.parse(m.data);
+				break;
+			case 'string':
+				msg.payload.data = m.data.toString();
+				break;
+			default:
+				msg.payload.data = m.data;
+			}
+
+			node.send(msg);
+
+			// Sent acknoledgement automatically
+			if (autoAck && !m.didAck) {
+				m.ack();
 				return;
 			}
+		});
 
-			try {
-				// Connect to JetStream Cluster
-				let client = await this.server.getClient();
-				this.server.refClient();
+		node.once('close', async () => {
+			sub.unsubscribe();
+		});
+	}
 
-				client.on('disconnect', () => {
-					setStatus('disconnected');
-				});
-
-				client.on('reconnect', () => {
-					setStatus('connecting');
-				});
-
-				node.on('close', async () => {
-					clearInterval(heartbeat);
-					this.server.unrefClient();
-				});
-
-				if (!config.subjects) {
-					setStatus('connected');
-					return;
-				}
-
-				setStatus('initializing');
-
-				// Ensure stream
-				if (config.stream === 'ensure') {
-					await client.ensureStream(config.ensurestream, [ config.subjects ]);
-				}
-
-				// Preparing consumer options
-				let opts = {
-					delivery: config.delivery || 'last',
-					ack: config.ack || 'auto',
-					startSeq: Number(config.startseq),
-					startTime: new Date(Number(config.starttime) * 1000),
-					ackWait: Number(config.ackwait),
-					queue: config.queue,
-				};
-
-				let autoAck = (opts.ack === 'auto') ? true : false;
-
-				// Subscribe to subjects
-				let sub = await client.subscribe(config.subjects, config.durable, opts, (m) => {
-
-					// Wait message until done
-					if (opts.ackWait <= 0 && !autoAck) {
-						wip[m.seq] = m;
-					}
-
-					let msg = {
-						jetstream: {
-							getMsg: () => {
-								return m
-							},
-							ack: () => {
-								delete wip[m.seq];
-								m.ack();
-							}
-						},
-						payload: {
-							seq: m.seq,
-							subject: m.subject,
-						}
-					}
-
-					switch(config.payloadType) {
-					case 'json':
-						msg.payload.data = JSON.parse(m.data);
-						break;
-					case 'string':
-						msg.payload.data = m.data.toString();
-						break;
-					default:
-						msg.payload.data = m.data;
-					}
-
-					node.send(msg);
-
-					// Sent acknoledgement automatically
-					if (autoAck && !m.didAck) {
-						m.ack();
-						return;
-					}
-				});
-
-				node.on('close', async () => {
-					sub.unsubscribe();
-				});
-
-			} catch(e) {
-				node.error(e);
-				return
-			}
-			setStatus('connected');
-		})();
-    }
+	function setStatus(node, type) {
+		switch(type) {
+		case 'connected':
+			node.status({
+				fill: 'green',
+				shape: 'dot',
+				text: 'connected'
+			});
+			break;
+		case 'connecting':
+			node.status({
+				fill: 'yellow',
+				shape: 'ring',
+				text: 'connecting'
+			});
+			break;
+		case 'initializing':
+			node.status({
+				fill: 'yellow',
+				shape: 'ring',
+				text: 'initializing'
+			});
+			break;
+		case 'disconnected':
+			node.status({
+				fill: 'red',
+				shape: 'ring',
+				text: 'disconnected'
+			});
+			break;
+		case 'receiving':
+			node.status({
+				fill: 'blue',
+				shape: 'ring',
+				text: 'receiving'
+			});
+			break;
+		}
+	}
 
     RED.nodes.registerType('NATS JetStream Consumer', ConsumerNode, {
 		credentials: {

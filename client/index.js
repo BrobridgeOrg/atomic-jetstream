@@ -4,7 +4,7 @@ const nats = require('nats');
 
 module.exports = class Client extends events.EventEmitter {
 
-	constructor(opts = {}) {
+	constructor(nc = null, opts = {}) {
 		super();
 
 		this.opts = Object.assign({
@@ -13,7 +13,20 @@ module.exports = class Client extends events.EventEmitter {
 			maxReconnectAttempts: -1,
 			pingInterval: 10000,
 		}, opts);
-		this.nc = null;
+		this.status = 'disconnected';
+		this.nc = nc;
+
+		if (nc) {
+			this.waitStatus();
+		}
+	}
+
+	isInitialized() {
+		return (this.nc) ? true : false;
+	}
+
+	clone() {
+		return new Client(this.nc, this.opts);
 	}
 
 	async connect() {
@@ -23,21 +36,13 @@ module.exports = class Client extends events.EventEmitter {
 			maxReconnectAttempts: this.opts.maxReconnectAttempts,
 			pingInterval: this.opts.pingInterval,
 		};
+
 		this.nc = await nats.connect(opts);
+		this.waitStatus();
 
 		// Updating states
+		this.status = 'connected';
 		this.emit('connected');
-
-		(async () => {
-			for await (const s of this.nc.status()) {
-				switch(s) {
-				case nats.Events.DISCONNECT:
-					this.emit('disconnect');
-				case nats.Events.RECONNECT:
-					this.emit('reconnect');
-				}
-			}
-		})()
 	}
 
 	async disconnect() {
@@ -45,6 +50,19 @@ module.exports = class Client extends events.EventEmitter {
 			return;
 
 		await this.nc.close();
+	}
+
+	async waitStatus() {
+		for await (const s of this.nc.status()) {
+			switch(s) {
+			case nats.Events.DISCONNECT:
+				this.status = 'disconnected';
+				this.emit('disconnect');
+			case nats.Events.RECONNECT:
+				this.status = 'reconnecting';
+				this.emit('reconnect');
+			}
+		}
 	}
 
 	async createStream(streamName, subjects = []) {
