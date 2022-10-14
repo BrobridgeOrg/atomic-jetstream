@@ -25,10 +25,10 @@
 			ensurestream: {
 				value: '',
 			},
-			durable: {
-				value: '',
+			consumertype: {
+				value: 'ephemeral',
 			},
-			queue: {
+			durable: {
 				value: '',
 			},
 			startseq: {
@@ -71,6 +71,33 @@
 			updateStreamOptions();
             $("#node-input-stream").on("change", function() {
 				updateStreamOptions();
+            });
+
+			// Consumer type
+			function updateConsumerType() {
+				switch($('#node-input-consumertype').val()) {
+				case 'ephemeral':
+					$('#node-row-durable').hide();
+					$('#node-input-ack').prop('disabled', false)
+					break;
+				case 'queueGroup':
+					// only manual ack can be selected
+					$('#node-input-ack')
+						.prop('disabled', 'disabled')
+						.val('manual')
+						.change();
+					$('#node-row-durable').show();
+					break;
+				default:
+					$('#node-input-ack').prop('disabled', false)
+
+					$('#node-row-durable').show();
+				}
+			}
+
+			updateConsumerType();
+            $("#node-input-consumertype").on("change", function() {
+				updateConsumerType();
             });
 
 			// Delivery
@@ -155,13 +182,19 @@
 		<input type="text" id="node-input-subjects" placeholder="(empty)">
 	</div>
 	<div class="form-row">
-		<label for="node-input-durable" style="width: 130px"><i class="fa fa-tag"></i> Durable</label>
-		<input type="text" id="node-input-durable" placeholder="(Ephemeral)">
-	</div>
-	<div class="form-row">
-		<label for="node-input-queue" style="width: 130px"><i class="fa fa-sitemap"></i> Queue Group</label>
-		<input type="text" id="node-input-queue" placeholder="(None)">
-	</div>
+        <label for="node-input-consumertype" style="width: 130px"><i class="fa fa-sitemap"></i> Type</label>
+		<select id="node-input-consumertype" style='width:70%'>
+			<option value="ephemeral">Ephemeral</option>
+			<option value="durable">Durable</option>
+			<option value="queueGroup">Queue Group</option>
+		</select>
+		<div id="node-row-durable" style="margin-left: 30px; margin-top: 10px;" class="hide">
+			<div class="form-row">
+				<label for="node-input-durable"><i class="fa fa-tag"></i> Durable</label>
+				<input type="text" id="node-input-durable">
+			</div>
+		</div>
+    </div>
 	<div class="form-row">
         <label for="node-input-delivery" style="width: 130px"><i class="fa fa-play"></i> Delivery Options</label>
 		<select id="node-input-delivery" style='width:70%'>

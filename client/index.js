@@ -88,6 +88,19 @@ module.exports = class Client extends events.EventEmitter {
 			if (e.code === '404') {
 				return await this.createStream(streamName, subjects)
 			}
+
+			throw e;
+		}
+	}
+
+	async findStreamBySubject(subject) {
+
+		let jsm = await this.nc.jetstreamManager();
+
+		try {
+			return await jsm.streams.find(subject)
+		} catch(e) {
+			throw e;
 		}
 	}
 
@@ -114,7 +127,7 @@ module.exports = class Client extends events.EventEmitter {
 		await js.publish(subject, sc.encode(payload));
 	}
 
-	async subscribe(subject, durable, opts = {}, callback) {
+	async subscribe(subject, opts = {}, callback) {
 
 		// Preparing consumer options
 		let cOpts = nats.consumerOpts();
@@ -128,6 +141,7 @@ module.exports = class Client extends events.EventEmitter {
 			cOpts.ackAll();
 			break;
 		case 'manual':
+			cOpts.ackExplicit();
 			cOpts.manualAck();
 			break;
 		}
@@ -150,21 +164,30 @@ module.exports = class Client extends events.EventEmitter {
 			break;
 		}
 
-		if (durable) {
-			cOpts.durable(durable);
-		}
-
 		if (opts.ackWait) {
 			cOpts.ackWait(opts.ackWait || 10000);
 		}
 
+		if (opts.durable) {
+			cOpts.durable(opts.durable);
+		}
+
 		if (opts.queue) {
-			cOpts.queue(opts.queue);
+			cOpts.queue(opts.durable);
+
+			// Find stream by subject
+			let stream = await this.findStreamBySubject(subject);
+			if (!stream) {
+				throw new Error('no stream has specified subject');
+			}
+
+			// Trying to create consumer
+			let jsm = await this.nc.jetstreamManager();
+			await jsm.consumers.add(stream, cOpts.config);
 		}
 
 		// Subscribe
 		let js = this.nc.jetstream();
-
 		let sub = await js.subscribe(subject, cOpts);
 
 		(async () => {

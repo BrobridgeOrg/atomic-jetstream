@@ -31,6 +31,7 @@ module.exports = function(RED) {
 					setStatus(node, 'connected');
 				})
 				.catch((e) => {
+					setStatus(node, 'error');
 					node.error(e);
 				});
 		});
@@ -85,13 +86,27 @@ module.exports = function(RED) {
 			startSeq: Number(node.config.startseq),
 			startTime: new Date(Number(node.config.starttime) * 1000),
 			ackWait: Number(node.config.ackwait),
-			queue: node.config.queue,
 		};
+
+		if (node.config.consumertype !== 'ephemeral') {
+
+			// Check if durable is set
+			if (!node.config.durable) {
+				throw new Error('require durable for non-ephemeral consumer');
+			}
+
+			opts.durable = node.config.durable;
+
+			if (node.config.consumertype === 'queueGroup') {
+				opts.ack = 'manual';
+				opts.queue = true;
+			}
+		}
 
 		let autoAck = (opts.ack === 'auto') ? true : false;
 
 		// Subscribe to subjects
-		let sub = await client.subscribe(node.config.subjects, node.config.durable, opts, (m) => {
+		let sub = await client.subscribe(node.config.subjects, opts, (m) => {
 
 			// Wait message until done
 			if (opts.ackWait <= 0 && !autoAck) {
@@ -160,6 +175,13 @@ module.exports = function(RED) {
 				fill: 'yellow',
 				shape: 'ring',
 				text: 'initializing'
+			});
+			break;
+		case 'error':
+			node.status({
+				fill: 'red',
+				shape: 'ring',
+				text: 'error'
 			});
 			break;
 		case 'disconnected':
