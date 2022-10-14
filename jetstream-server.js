@@ -23,7 +23,7 @@ module.exports = function (RED) {
 		// Create original client
 		let Client = require('./client');
 		this.client = new Client(null, {
-			server: this.server + ':' + this.port,
+			servers: this.server + ':' + this.port,
 			maxPingOut: this.maxPingOut,
 			maxReconnectAttempts: this.maxReconnectAttempts,
 			pingInterval: this.pingInterval
@@ -63,7 +63,7 @@ module.exports = function (RED) {
 
 		this.getOpts = function() {
 			return {
-				server: this.server + ':' + this.port,
+				servers: this.server + ':' + this.port,
 				maxPingOut: this.maxPingOut,
 				maxReconnectAttempts: this.maxReconnectAttempts,
 				pingInterval: this.pingInterval
