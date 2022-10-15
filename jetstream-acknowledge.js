@@ -9,7 +9,11 @@ module.exports = function(RED) {
 			if (!msg.jetstream)
 				return done();
 
-			msg.jetstream.ack();
+			if (config.action === 'nak') {
+				msg.jetstream.nak();
+			} else {
+				msg.jetstream.ack();
+			}
 
 			if (done) {
 				return done();

@@ -4,8 +4,11 @@
 		color: '#00bb88',
 		defaults: {
 			name: {
-				value: ""
+				value: ''
 			},
+			action: {
+				value: 'ack'
+			}
 		},
 		inputs: 1,
 		outputs: 0,
@@ -17,9 +20,16 @@
 </script>
 
 <script type="text/x-red" data-template-name="NATS JetStream Acknowledge">
-		<div class="form-row">
-        <label for="node-input-name"><i class="fa fa-stack-exchange"></i> Name</label>
+	<div class="form-row">
+        <label for="node-input-name" style="width: 130px"><i class="fa fa-stack-exchange"></i> Name</label>
         <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+	<div class="form-row">
+        <label for="node-input-action" style="width: 130px"><i class="fa fa-reply"></i> Action</label>
+		<select id="node-input-action">
+			<option value="ack">Ack</option>
+			<option value="nak">Negatively Ack</option>
+		</select>
     </div>
 </script>
 

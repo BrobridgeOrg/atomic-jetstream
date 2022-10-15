@@ -148,6 +148,10 @@ module.exports = function(RED) {
 								return;
 
 							m.ack();
+						},
+						nak: () => {
+							delete node.wip[m.seq];
+							m.nak();
 						}
 					},
 					payload: {
