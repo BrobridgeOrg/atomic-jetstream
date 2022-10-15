@@ -185,6 +185,10 @@ module.exports = class Client extends events.EventEmitter {
 			cOpts.ackWait(opts.ackWait || 10000);
 		}
 
+		if (opts.maxAckPending) {
+			cOpts.maxAckPending(opts.maxAckPending || 2000);
+		}
+
 		if (opts.durable) {
 			cOpts.durable(opts.durable);
 		}

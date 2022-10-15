@@ -46,6 +46,10 @@
 				value: 'auto',
 				required: true
 			},
+			maxackpending: {
+				value: 2000,
+				required: true
+			},
 			ackwait: {
 				value: 10000,
 			},
@@ -234,6 +238,10 @@
 			<div class="form-row">
 				<label for="node-input-ackwait"><i class="fa fa-history"></i> Wait time</label>
 				<input type="text" id="node-input-ackwait" style="width:100px" placeholder="0"> ms
+			</div>
+			<div class="form-row">
+				<label for="node-input-maxackpending"><i class="fa fa-stack-exchange"></i> Max Pending</label>
+				<input type="text" id="node-input-maxackpending" style="width:100px" placeholder="2000">
 			</div>
 		</div>
     </div>

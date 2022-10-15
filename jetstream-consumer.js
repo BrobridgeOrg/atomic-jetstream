@@ -100,6 +100,7 @@ module.exports = function(RED) {
 			startSeq: Number(node.config.startseq),
 			startTime: new Date(Number(node.config.starttime) * 1000),
 			ackWait: Number(node.config.ackwait),
+			maxAckPending: Number(node.config.maxackpending) || 2000,
 		};
 
 		if (node.config.consumertype !== 'ephemeral') {
@@ -152,7 +153,7 @@ module.exports = function(RED) {
 					payload: {
 						seq: m.seq,
 						subject: m.subject,
-						payload: m.payload,
+						data: m.data,
 					}
 				}
 
