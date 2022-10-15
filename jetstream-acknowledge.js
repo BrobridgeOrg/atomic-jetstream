@@ -9,12 +9,7 @@ module.exports = function(RED) {
 			if (!msg.jetstream)
 				return done();
 
-			node.log('Acknowledging message', msg.seq);
-
-			let m = msg.jetstream.getMsg();
-			if (!m.didAck) {
-				msg.jetstream.ack();
-			}
+			msg.jetstream.ack();
 
 			if (done) {
 				return done();

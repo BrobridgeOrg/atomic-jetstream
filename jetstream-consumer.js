@@ -117,6 +117,14 @@ module.exports = function(RED) {
 			}
 		}
 
+		// wait forever
+		let keepalive = false;
+		if (opts.ackWait <= 0) {
+			opts.ackWait = 10000;
+
+			keepalive = true;
+		}
+
 		let autoAck = (opts.ack === 'auto') ? true : false;
 
 		try {
@@ -124,7 +132,7 @@ module.exports = function(RED) {
 			let sub = await client.subscribe(node.config.subjects, opts, (m) => {
 
 				// Wait message until done
-				if (opts.ackWait <= 0 && !autoAck) {
+				if (keepalive) {
 					node.wip[m.seq] = m;
 				}
 
@@ -135,12 +143,16 @@ module.exports = function(RED) {
 						},
 						ack: () => {
 							delete node.wip[m.seq];
+							if (m.didAck)
+								return;
+
 							m.ack();
 						}
 					},
 					payload: {
 						seq: m.seq,
 						subject: m.subject,
+						payload: m.payload,
 					}
 				}
 

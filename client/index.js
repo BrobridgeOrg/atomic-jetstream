@@ -81,7 +81,6 @@ module.exports = class Client extends events.EventEmitter {
 
 		try {
 			let info = await jsm.streams.info(streamName)
-			return;
 		} catch(e) {
 
 			// Not found
@@ -100,6 +99,24 @@ module.exports = class Client extends events.EventEmitter {
 		try {
 			return await jsm.streams.find(subject)
 		} catch(e) {
+			throw e;
+		}
+	}
+
+	async ensureConsumer(streamName, consumerName, opts = {}) {
+
+		let jsm = await this.nc.jetstreamManager();
+
+		try {
+			let info = await jsm.consumers.info(streamName, consumerName)
+		} catch(e) {
+
+			// Not found
+			if (e.code === '404') {
+				// Not found, so trying to create consumer
+				return await jsm.consumers.add(streamName, opts);
+			}
+
 			throw e;
 		}
 	}
@@ -181,14 +198,8 @@ module.exports = class Client extends events.EventEmitter {
 				throw new Error('no stream has specified subject');
 			}
 
-			// check consumer
-			let jsm = await this.nc.jetstreamManager();
-			let consumer = await jsm.consumers.info(stream, opts.durable);
-			if (!consumer) {
-
-				// Not found, so trying to create consumer
-				await jsm.consumers.add(stream, cOpts.config);
-			}
+			// ensure consumer
+			await this.ensureConsumer(stream, opts.durable, cOpts.config);
 		}
 
 		// Subscribe
