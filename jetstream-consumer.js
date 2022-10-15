@@ -48,6 +48,7 @@ module.exports = function(RED) {
 		}, 5000);
 
 		node.on('close', async () => {
+			this.wip = {};
 			clearInterval(heartbeat);
 			this.server.releaseClient(client);
 		});
