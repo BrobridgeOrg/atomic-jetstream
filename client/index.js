@@ -181,9 +181,14 @@ module.exports = class Client extends events.EventEmitter {
 				throw new Error('no stream has specified subject');
 			}
 
-			// Trying to create consumer
+			// check consumer
 			let jsm = await this.nc.jetstreamManager();
-			await jsm.consumers.add(stream, cOpts.config);
+			let consumer = await jsm.consumers.info(stream, opts.durable);
+			if (!consumer) {
+
+				// Not found, so trying to create consumer
+				await jsm.consumers.add(stream, cOpts.config);
+			}
 		}
 
 		// Subscribe

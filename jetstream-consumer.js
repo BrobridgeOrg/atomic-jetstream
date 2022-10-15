@@ -78,12 +78,19 @@ module.exports = function(RED) {
 		// Ensure stream
 		if (node.config.stream === 'ensure') {
 
+			node.log('Initializing stream');
+
 			let streamNode = RED.nodes.getNode(node.config.ensurestream);
 
 			if (!streamNode)
 				throw new Error('No specific stream');
 
-			await client.ensureStream(streamNode.config.stream, streamNode.config.subjects, streamNode.getOptions());
+			try {
+				await client.ensureStream(streamNode.config.stream, streamNode.config.subjects, streamNode.getOptions());
+			} catch(e) {
+				console.log('failed to initialize stream');
+				throw e;
+			}
 		}
 
 		// Preparing consumer options
@@ -112,57 +119,62 @@ module.exports = function(RED) {
 
 		let autoAck = (opts.ack === 'auto') ? true : false;
 
-		// Subscribe to subjects
-		let sub = await client.subscribe(node.config.subjects, opts, (m) => {
+		try {
+			// Subscribe to subjects
+			let sub = await client.subscribe(node.config.subjects, opts, (m) => {
 
-			// Wait message until done
-			if (opts.ackWait <= 0 && !autoAck) {
-				node.wip[m.seq] = m;
-			}
+				// Wait message until done
+				if (opts.ackWait <= 0 && !autoAck) {
+					node.wip[m.seq] = m;
+				}
 
-			let msg = {
-				jetstream: {
-					getMsg: () => {
-						return m
+				let msg = {
+					jetstream: {
+						getMsg: () => {
+							return m
+						},
+						ack: () => {
+							delete node.wip[m.seq];
+							m.ack();
+						}
 					},
-					ack: () => {
-						delete node.wip[m.seq];
-						m.ack();
+					payload: {
+						seq: m.seq,
+						subject: m.subject,
 					}
-				},
-				payload: {
-					seq: m.seq,
-					subject: m.subject,
 				}
-			}
 
-			try {
-				switch(node.config.payloadType) {
-				case 'json':
-					msg.payload.data = JSON.parse(m.data);
-					break;
-				case 'string':
-					msg.payload.data = m.data.toString();
-					break;
-				default:
-					msg.payload.data = m.data;
+				try {
+					switch(node.config.payloadType) {
+					case 'json':
+						msg.payload.data = JSON.parse(m.data);
+						break;
+					case 'string':
+						msg.payload.data = m.data.toString();
+						break;
+					default:
+						msg.payload.data = m.data;
+					}
+				} catch(e) {
+					node.error(e);
 				}
-			} catch(e) {
-				node.error(e);
-			}
 
-			node.send(msg);
+				node.send(msg);
 
-			// Sent acknoledgement automatically
-			if (autoAck && !m.didAck) {
-				m.ack();
-				return;
-			}
-		});
+				// Sent acknoledgement automatically
+				if (autoAck && !m.didAck) {
+					m.ack();
+					return;
+				}
+			});
 
-		node.once('close', async () => {
-			sub.unsubscribe();
-		});
+			node.once('close', async () => {
+				sub.unsubscribe();
+			});
+		} catch(e) {
+			console.log('Failed to subscribe for', node.config.subjects);
+			throw e;
+		}
 	}
 
 	function setStatus(node, type) {
