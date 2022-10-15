@@ -15,24 +15,43 @@
 			},
             max_msgs: {
 				value: -1,
-				required: true
 			},
             max_age: {
 				value: 0,
-				required: true
 			},
-            max_bytes: {
+            max_ageunit: {
+				value: 'second',
+			},
+            max_size: {
 				value: -1,
-				required: true
+			},
+            max_sizeunit: {
+				value: 'mb',
 			},
             num_replicas: {
 				value: 1,
-				required: true
 			},
         },
         label: function() {
             return this.stream || 'NATS JetStream Stream';
-        }
+        },
+		oneditprepare: function() {
+			$('#node-config-input-max_msgs').typedInput({
+				type: "num"
+			});
+
+			$('#node-config-input-max_age').typedInput({
+				type: "num"
+			});
+
+			$('#node-config-input-max_size').typedInput({
+				type: "num"
+			});
+
+			$('#node-config-input-num_replicas').typedInput({
+				type: "num"
+			});
+		}
     });
 </script>
 
@@ -42,27 +61,40 @@
         <input type="text" id="node-config-input-stream">
     </div>
     <div class="form-row">
-        <label for="node-config-input-description" style="width: 130px"><i class="fa fa-comments"></i> Description</label>
+        <label for="node-config-input-description" style="width: 130px"><i class="fa fa-info-circle"></i> Description</label>
         <input type="text" id="node-config-input-description">
     </div>
     <div class="form-row">
-        <label for="node-config-input-subjects" style="width: 130px"><i class="fa fa-comments"></i> Subjects</label>
+        <label for="node-config-input-subjects" style="width: 130px"><i class="fa fa-hashtag"></i> Subjects</label>
         <input type="text" id="node-config-input-subjects">
     </div>
 	<div class="form-row">
-		<label for="node-input-max_msgs" style="width: 130px"><i class="fa fa-message"></i> Max Msgs</label>
-		<input type="text" id="node-input-max_msgs" placeholder="-1" style="width: 150px"> msgs
+		<label for="node-config-input-max_msgs" style="width: 130px"><i class="fa fa-comments"></i> Max Msgs</label>
+		<input type="text" id="node-config-input-max_msgs" placeholder="-1" style="width: 150px"> msgs
 	</div>
 	<div class="form-row">
-		<label for="node-input-max_age" style="width: 130px"><i class="fa fa-history"></i> Max Age</label>
-		<input type="text" id="node-input-max_age" placeholder="0">
+		<label for="node-config-input-max_age" style="width: 130px"><i class="fa fa-history"></i> Max Age</label>
+		<input type="text" id="node-config-input-max_age" placeholder="0" style="width: 150px">
+		<select id="node-config-input-max_ageunit" style='width:100px'>
+			<option value="second">Second</option>
+			<option value="millisecond">Millisecond</option>
+			<option value="minute">Minute</option>
+			<option value="hour">Hour</option>
+			<option value="day">Day</option>
+		</select>
 	</div>
 	<div class="form-row">
-		<label for="node-input-max_bytes" style="width: 130px"><i class="fa fa-th"></i> Max Bytes</label>
-		<input type="text" id="node-input-max_bytes" placeholder="-1">
+		<label for="node-config-input-max_size" style="width: 130px"><i class="fa fa-th"></i> Max Size</label>
+		<input type="text" id="node-config-input-max_size" placeholder="-1" style="width: 150px">
+		<select id="node-config-input-max_sizeunit" style='width:100px'>
+			<option value="mb">MB</option>
+			<option value="gb">GB</option>
+			<option value="kb">KB</option>
+			<option value="bytes">Bytes</option>
+		</select>
 	</div>
 	<div class="form-row">
-		<label for="node-input-num_replicas" style="width: 130px"><i class="fa fa-clone"></i> Replicas</label>
-		<input type="text" id="node-input-num_replicas" placeholder="1">
+		<label for="node-config-input-num_replicas" style="width: 130px"><i class="fa fa-clone"></i> Replicas</label>
+		<input type="text" id="node-config-input-num_replicas" placeholder="1">
 	</div>
 </script>

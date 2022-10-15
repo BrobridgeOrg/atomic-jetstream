@@ -135,15 +135,19 @@ module.exports = function(RED) {
 				}
 			}
 
-			switch(node.config.payloadType) {
-			case 'json':
-				msg.payload.data = JSON.parse(m.data);
-				break;
-			case 'string':
-				msg.payload.data = m.data.toString();
-				break;
-			default:
-				msg.payload.data = m.data;
+			try {
+				switch(node.config.payloadType) {
+				case 'json':
+					msg.payload.data = JSON.parse(m.data);
+					break;
+				case 'string':
+					msg.payload.data = m.data.toString();
+					break;
+				default:
+					msg.payload.data = m.data;
+				}
+			} catch(e) {
+				node.error(e);
 			}
 
 			node.send(msg);

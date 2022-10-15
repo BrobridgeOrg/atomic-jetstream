@@ -69,7 +69,6 @@ module.exports = class Client extends events.EventEmitter {
 
 		let jsm = await this.nc.jetstreamManager();
 
-		console.log(opts);
 		await jsm.streams.add(Object.assign(opts, {
 			name: streamName,
 			subjects: subjects
