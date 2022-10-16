@@ -1,6 +1,6 @@
 {
   "name": "atomic-jetstream",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "NATS JetStream module for Brobridge Atomic",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
