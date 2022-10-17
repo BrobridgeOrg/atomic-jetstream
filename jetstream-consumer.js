@@ -100,7 +100,6 @@ module.exports = function(RED) {
 			startSeq: Number(node.config.startseq),
 			startTime: new Date(Number(node.config.starttime) * 1000),
 			ackWait: Number(node.config.ackwait),
-			maxAckPending: Number(node.config.maxackpending) || 2000,
 		};
 
 		if (node.config.consumertype !== 'ephemeral') {
@@ -127,6 +126,10 @@ module.exports = function(RED) {
 		}
 
 		let autoAck = (opts.ack === 'auto') ? true : false;
+
+		if (!autoAck) {
+			 opts.maxAckPending = Number(node.config.maxackpending) || 2000;
+		}
 
 		try {
 			// Subscribe to subjects
@@ -164,16 +167,18 @@ module.exports = function(RED) {
 				try {
 					switch(node.config.payloadType) {
 					case 'json':
-						msg.payload.data = JSON.parse(m.data);
+						msg.payload.data = JSON.parse(client.decode(m.data));
 						break;
 					case 'string':
-						msg.payload.data = m.data.toString();
+						msg.payload.data = client.decode(m.data);
 						break;
 					default:
 						msg.payload.data = m.data;
 					}
 				} catch(e) {
+					node.error(m.seq);
 					node.error(e);
+					console.log(client.decode(m.data));
 				}
 
 				node.send(msg);

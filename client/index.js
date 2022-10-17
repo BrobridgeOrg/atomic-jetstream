@@ -144,6 +144,12 @@ module.exports = class Client extends events.EventEmitter {
 		await js.publish(subject, sc.encode(payload));
 	}
 
+	decode(data) {
+		let sc = nats.StringCodec();
+
+		return sc.decode(data);
+	}
+
 	async subscribe(subject, opts = {}, callback) {
 
 		// Preparing consumer options
