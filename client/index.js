@@ -113,6 +113,9 @@ module.exports = class Client extends events.EventEmitter {
 
 			// Not found
 			if (e.code === '404') {
+
+				opts.durable = consumerName;
+
 				// Not found, so trying to create consumer
 				return await jsm.consumers.add(streamName, opts);
 			}
@@ -199,7 +202,7 @@ module.exports = class Client extends events.EventEmitter {
 			cOpts.durable(opts.durable);
 		}
 
-		if (opts.queue) {
+		if (opts.queue && opts.durable) {
 			cOpts.queue(opts.durable);
 
 			// Find stream by subject
