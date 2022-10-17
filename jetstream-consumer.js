@@ -70,6 +70,7 @@ module.exports = function(RED) {
 		});
 
 		if (!node.config.subjects) {
+			node.error('require subjects');
 			return;
 		}
 
