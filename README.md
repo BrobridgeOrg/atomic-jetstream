@@ -4,7 +4,7 @@ NATS JetStream Messaging Module for Brobridge Atomic (Compatible with Node-RED).
 
 ## Commercial Support
 
-Brobridge provides the customer service which provides comprehensive technical and commercial support for the module.
+Brobridge provides the customer service which contains comprehensive technical and commercial support for the module.
 
 ## License
 
