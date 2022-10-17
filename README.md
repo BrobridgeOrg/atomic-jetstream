@@ -8,7 +8,7 @@ Brobridge provides the customer service which provides comprehensive technical a
 
 ## License
 
-Licensed under the MIT License
+Licensed under the Apache License
 
 ## Authors
 
