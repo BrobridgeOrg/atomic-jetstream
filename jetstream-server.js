@@ -17,7 +17,7 @@ module.exports = function (RED) {
 		this.server = n.server
 		this.port = n.port
 		this.maxPingOut = 3;
-		this.maxReconnectAttempts -1;
+		this.maxReconnectAttempts = -1;
 		this.pingInterval = 10000;
 
 		// Create original client
