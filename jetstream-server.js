@@ -32,13 +32,16 @@ module.exports = function (RED) {
 		// Setup events
 		this.client.on('disconnect', () => {
 			this.status = 'disconnected';
+			node.log('Disconnected from server: ' + node.server + ':' + node.port);
 		});
 
 		this.client.on('reconnect', () => {
 			this.status = 'reconnecting';
+			node.log('Reconnecting to server: ' + node.server + ':' + node.port);
 		});
 
 		this.client.on('connected', () => {
+			node.log('Connected to JetStream server' + node.server + ':' + node.port);
 			this.status = 'connected';
 		});
 
@@ -74,7 +77,6 @@ module.exports = function (RED) {
 			node.log('Connecting to JetStream server: ' + node.server + ':' + node.port);
 			node.client.connect()
 				.then(() => {
-					node.log('Connected to JetStream server')
 					node.instance.emit('ready');
 				})
 				.catch((e) => {
