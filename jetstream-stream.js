@@ -26,13 +26,13 @@ module.exports = function (RED) {
 		this.config.max_msgs = Number(this.config.max_msgs) || -1;
 		this.config.num_replicas = Number(this.config.num_replicas) || 1;
 
-		if (Number(this.config.max_size)) {
+		if (Number(this.config.max_size) > 0) {
 			this.config.max_bytes = Number(this.config.max_size) * sizeunit[this.config.max_sizeunit];
 		} else {
 			this.config.max_bytes = -1;
 		}
 
-		if (Number(this.config.max_age)) {
+		if (Number(this.config.max_age) > 0) {
 			this.config.max_age = Number(this.config.max_age) * ageunit[this.config.max_ageunit];
 		} else {
 			this.config.max_age = 0;
