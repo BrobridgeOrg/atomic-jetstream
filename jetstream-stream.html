@@ -2,6 +2,9 @@
     RED.nodes.registerType('NATS JetStream Stream',{
         category: 'config',
         defaults: {
+            name: {
+				value: '',
+			},
             stream: {
 				value: '',
 				required: true
@@ -33,7 +36,7 @@
 			},
         },
         label: function() {
-            return this.stream || 'NATS JetStream Stream';
+            return this.name || this.stream || 'NATS JetStream Stream';
         },
 		oneditprepare: function() {
 			$('#node-config-input-max_msgs').typedInput({
@@ -57,7 +60,11 @@
 
 <script type="text/x-red" data-template-name="NATS JetStream Stream">
     <div class="form-row">
-        <label for="node-config-input-stream" style="width: 130px"><i class="fa fa-inbox"></i> Stream Name</label>
+        <label for="node-config-input-name" style="width: 130px"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-config-input-name">
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-stream" style="width: 130px"><i class="fa fa-inbox"></i> Stream</label>
         <input type="text" id="node-config-input-stream">
     </div>
     <div class="form-row">

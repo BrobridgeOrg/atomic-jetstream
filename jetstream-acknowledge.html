@@ -15,7 +15,10 @@
 		icon: 'nats-icon-white.png',
 		label: function() {
 				return this.name || 'NATS JetStream Acknowledge';
-			}
+		},
+		oneditprepare: function() {
+			console.log(this);
+		}
 	});
 </script>
 
