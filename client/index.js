@@ -109,6 +109,22 @@ module.exports = class Client extends events.EventEmitter {
 
 		try {
 			let info = await jsm.consumers.info(streamName, consumerName)
+
+			// Check consumer confiuration or update
+			let updated = false;
+			for (let k in opts) {
+
+				// Something's updated
+				if (opts[k] != info.config[k]) {
+					info.config[k] = opts[k];
+					updated = true;
+				}
+			}
+
+			if (updated) {
+				await jsm.consumers.update(streamName, consumerName, info.config);
+			}
+			
 		} catch(e) {
 
 			// Not found

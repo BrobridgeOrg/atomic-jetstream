@@ -41,7 +41,7 @@ module.exports = function (RED) {
 		});
 
 		this.client.on('connected', () => {
-			node.log('Connected to JetStream server' + node.server + ':' + node.port);
+			node.log('Connected to JetStream server: ' + node.server + ':' + node.port);
 			this.status = 'connected';
 		});
 
