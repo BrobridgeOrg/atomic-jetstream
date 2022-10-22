@@ -114,6 +114,14 @@ module.exports = class Client extends events.EventEmitter {
 			let updated = false;
 			for (let k in opts) {
 
+				if (k === 'name') {
+					continue;
+				}
+
+				if (k === 'deliver_subject') {
+					continue;
+				}
+
 				// Something's updated
 				if (opts[k] != info.config[k]) {
 					info.config[k] = opts[k];
@@ -122,6 +130,7 @@ module.exports = class Client extends events.EventEmitter {
 			}
 
 			if (updated) {
+				console.log('updating', streamName, consumerName);
 				await jsm.consumers.update(streamName, consumerName, info.config);
 			}
 			
@@ -234,6 +243,8 @@ module.exports = class Client extends events.EventEmitter {
 		// Subscribe
 		let js = this.nc.jetstream();
 		let sub = await js.subscribe(subject, cOpts);
+
+		console.log('[client]', subject, opts.durable);
 
 		(async () => {
 			for await (const m of sub) {

@@ -79,12 +79,12 @@ module.exports = function(RED) {
 		// Ensure stream
 		if (node.config.stream === 'ensure') {
 
-			node.log('Initializing stream');
-
 			let streamNode = RED.nodes.getNode(node.config.ensurestream);
 
 			if (!streamNode)
 				throw new Error('No specific stream');
+
+			node.log('Initializing stream ' + streamNode.config.stream);
 
 			try {
 				await client.ensureStream(streamNode.config.stream, streamNode.config.subjects, streamNode.getOptions());
@@ -133,6 +133,8 @@ module.exports = function(RED) {
 		}
 
 		try {
+			node.log('subscribing to ' + node.config.subjects);
+
 			// Subscribe to subjects
 			let sub = await client.subscribe(node.config.subjects, opts, (m) => {
 
@@ -194,6 +196,7 @@ module.exports = function(RED) {
 			node.once('close', async () => {
 				sub.unsubscribe();
 			});
+
 		} catch(e) {
 			console.log('Failed to subscribe for', node.config.subjects);
 			throw e;
