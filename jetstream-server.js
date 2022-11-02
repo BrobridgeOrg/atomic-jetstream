@@ -45,7 +45,9 @@ module.exports = function (RED) {
 			this.status = 'connected';
 		});
 
-		connect();
+		connect().catch((e) => {
+			node.error(e);
+		});
 
 		this.getInstance = () => {
 			return node.instance;
