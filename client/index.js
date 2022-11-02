@@ -53,15 +53,19 @@ module.exports = class Client extends events.EventEmitter {
 	}
 
 	async waitStatus() {
-		for await (const s of this.nc.status()) {
-			switch(s) {
-			case nats.Events.DISCONNECT:
-				this.status = 'disconnected';
-				this.emit('disconnect');
-			case nats.Events.RECONNECT:
-				this.status = 'reconnecting';
-				this.emit('reconnect');
+		try {
+			for await (const s of this.nc.status()) {
+				switch(s) {
+				case nats.Events.DISCONNECT:
+					this.status = 'disconnected';
+					this.emit('disconnect');
+				case nats.Events.RECONNECT:
+					this.status = 'reconnecting';
+					this.emit('reconnect');
+				}
 			}
+		} catch(e) {
+			console.log(e);
 		}
 	}
 

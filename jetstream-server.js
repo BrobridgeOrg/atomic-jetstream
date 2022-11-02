@@ -45,9 +45,7 @@ module.exports = function (RED) {
 			this.status = 'connected';
 		});
 
-		connect().catch((e) => {
-			node.error(e);
-		});
+		connect()
 
 		this.getInstance = () => {
 			return node.instance;
@@ -79,6 +77,13 @@ module.exports = function (RED) {
 			node.log('Connecting to JetStream server: ' + node.server + ':' + node.port);
 			node.client.connect()
 				.then(() => {
+					node.once('close', async () => {
+						try {
+							await node.client.disconnect();
+						} catch(e) {
+							console.log(e);
+						}
+					});
 					node.instance.emit('ready');
 				})
 				.catch((e) => {
