@@ -7,6 +7,8 @@ module.exports = function(RED) {
 		this.server = RED.nodes.getNode(config.server)
 		this.config = config;
 
+		setStatus(node, 'disconnected');
+
 		if (!this.server) {
 			setStatus(node, 'disconnected');
 			return;
@@ -27,6 +29,7 @@ module.exports = function(RED) {
 					setStatus(node, 'connected');
 				})
 				.catch((e) => {
+					setStatus(node, 'error');
 					node.error(e);
 				});
 		});
@@ -63,6 +66,19 @@ module.exports = function(RED) {
 	}
 
 	async function init(node, client) {
+
+		// Setup events
+		client.on('disconnect', () => {
+			setStatus(node, 'disconnected');
+		});
+
+		client.on('reconnect', () => {
+			setStatus(node, 'connecting');
+		});
+
+		client.on('connected', () => {
+			setStatus(node, 'connected');
+		});
 
 		node.on('input', async (msg, send, done) => {
 

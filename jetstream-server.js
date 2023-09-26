@@ -6,6 +6,8 @@ module.exports = function (RED) {
 		
 		let node = this;
 
+		let timeoutID=0;
+
 		const events = require('events');
 
 		this.instance = new events.EventEmitter();
@@ -73,7 +75,13 @@ module.exports = function (RED) {
 			}
 		};
 
+
+                node.on('close', () => {
+                        clearTimeout(timeoutID);
+                });
+
 		function connect() {
+                        clearTimeout(timeoutID);
 			node.log('Connecting to JetStream server: ' + node.server + ':' + node.port);
 			node.client.connect()
 				.then(() => {
@@ -89,8 +97,16 @@ module.exports = function (RED) {
 				.catch((e) => {
 					node.log('Failed to connect to JetStream server')
 					console.log(e);
+					node.error(e);
+
+					// retry
+					timeoutID = setTimeout(function(){
+						connect();
+					}, 3000);
+
 				});
-		}
+		};
+
 	}
 
 	RED.nodes.registerType('NATS JetStream Server', JetStreamServerNode)
