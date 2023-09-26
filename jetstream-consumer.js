@@ -66,7 +66,7 @@ module.exports = function(RED) {
 		});
 
 		client.on('connected', () => {
-			setStatus(node, 'connecting');
+			setStatus(node, 'connected');
 		});
 
 		if (!node.config.subjects) {
