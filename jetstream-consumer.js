@@ -1,4 +1,5 @@
 module.exports = function(RED) {
+    let timeoutID=0;
 
     function ConsumerNode(config) {
 
@@ -26,14 +27,7 @@ module.exports = function(RED) {
 			// Getting a client
 			client = this.server.allocateClient();
 
-			init(node, client)
-				.then(() => {
-					setStatus(node, 'connected');
-				})
-				.catch((e) => {
-					setStatus(node, 'error');
-					node.error(e);
-				});
+			initClient(node, client)
 		});
 		
 		// heartbeat for message
@@ -50,9 +44,28 @@ module.exports = function(RED) {
 		node.on('close', async () => {
 			this.wip = {};
 			clearInterval(heartbeat);
+			clearTimeout(timeoutID);
 			this.server.releaseClient(client);
 		});
     }
+
+	function initClient(node, client){
+		clearTimeout(timeoutID);
+		init(node, client)
+			.then(() => {
+				setStatus(node, 'connected');
+			})
+			.catch((e) => {
+				setStatus(node, 'error');
+				node.error(e);
+
+				// retry
+				timeoutID = setTimeout(function(){
+					initClient(node, client);
+				}, 3000);
+			});
+
+	}
 
 	async function init(node, client) {
 
