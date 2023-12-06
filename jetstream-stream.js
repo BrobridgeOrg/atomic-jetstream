@@ -46,7 +46,7 @@ module.exports = function (RED) {
 				max_msgs: this.config.max_msgs,
 				max_age: this.config.max_age,
 				max_bytes: this.config.max_bytes,
-				num_replica: this.config.num_replicas,
+				num_replicas: this.config.num_replicas,
 			}
 		};
 	}
