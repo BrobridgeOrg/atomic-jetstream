@@ -118,7 +118,7 @@ module.exports = function(RED) {
 
 				done();
 			} catch(e) {
-				node.error(e);
+				node.error(e, msg);
 			}
 		});
 	}
