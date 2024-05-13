@@ -18,6 +18,8 @@ module.exports = function (RED) {
 		// Options
 		this.server = n.server
 		this.port = n.port
+		this.user = n.user
+		this.password = n.password
 		this.maxPingOut = 3;
 		this.maxReconnectAttempts = -1;
 		this.pingInterval = 10000;
@@ -25,6 +27,8 @@ module.exports = function (RED) {
 		// Create original client
 		let Client = require('./client');
 		this.client = new Client(null, {
+			user: this.user,
+			password: this.password,
 			servers: this.server + ':' + this.port,
 			maxPingOut: this.maxPingOut,
 			maxReconnectAttempts: this.maxReconnectAttempts,

@@ -11,6 +11,14 @@
 				required: true,
 				validate: RED.validators.number()
 			},
+            user: {
+                value: 'user',
+                required: false
+            },
+            password: {
+                value: 'password',
+                required: false
+            }
         },
         label: function() {
             return this.server + ':' + this.port;
@@ -27,4 +35,13 @@
         <label for="node-config-input-port"><i class="icon-bookmark"></i> Port</label>
         <input type="text" id="node-config-input-port">
     </div>
+    <div class="form-row">
+        <label for="node-config-input-user"><i class="icon-bookmark"></i> User</label>
+        <input type="text" id="node-config-input-user">
+    </div>
+</div>
+<div class="form-row">
+    <label for="node-config-input-password"><i class="icon-bookmark"></i> password</label>
+    <input type="text" id="node-config-input-password">
+</div>
 </script>
