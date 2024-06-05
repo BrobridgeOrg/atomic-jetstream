@@ -225,6 +225,8 @@ module.exports = class Client extends events.EventEmitter {
 			break;
 		}
 
+    cOpts.maxMessages(opts.maxMessages || 100);
+
 		if (opts.ackWait) {
 			cOpts.ackWait(opts.ackWait || 10000);
 		}

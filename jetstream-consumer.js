@@ -114,6 +114,7 @@ module.exports = function(RED) {
 			startSeq: Number(node.config.startseq),
 			startTime: new Date(Number(node.config.starttime) * 1000),
 			ackWait: Number(node.config.ackwait),
+      maxMessages: Number(node.config.maxmessages) || 100,
 		};
 
 		if (node.config.consumertype !== 'ephemeral') {
