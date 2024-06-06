@@ -3,74 +3,78 @@ module.exports = function(RED) {
 
     function ConsumerNode(config) {
 
-        RED.nodes.createNode(this, config);
-        var node = this;
+      RED.nodes.createNode(this, config);
+      var node = this;
 
-		// Getting server information from gravity server node
-		this.server = RED.nodes.getNode(config.server)
-		this.config = config;
+      // Getting server information from gravity server node
+      this.server = RED.nodes.getNode(config.server)
+      this.config = config;
+      this.pending = 0;
 
-		setStatus(node, 'disconnected');
+      setStatus(node, 'disconnected');
 
-		if (!this.server) {
-			setStatus(node, 'disconnected');
-			return;
-		}
+      if (!this.server) {
+        return;
+      }
 
-		// Preparing client
-		let client = null;
-		let jsMgr = this.server.getInstance()
-		jsMgr.once('ready', () => {
+      setStatus(node, this.server.status);
 
-			setStatus(jsMgr.status)
+      // Preparing client
+      let client = null;
+      let jsMgr = this.server.getInstance()
+      jsMgr.once('ready', () => {
 
-			// Getting a client
-			client = this.server.allocateClient();
+        setStatus(jsMgr.status)
 
-			initClient(node, client)
-		});
-		
-		// heartbeat for message
-		this.wip = {};
-		let heartbeat = setInterval(() => {
-			Object.values(node.wip).forEach((m) => {
-				if (m.didAck)
-					return;
+        // Getting a client
+        client = this.server.allocateClient();
 
-				m.working();
-			})
-		}, 5000);
+        initClient(node, client)
+      });
 
-		node.on('close', async () => {
-			this.wip = {};
-			clearInterval(heartbeat);
-			clearTimeout(timeoutID);
-			this.server.releaseClient(client);
-		});
+      // heartbeat for message
+      this.wip = {};
+      let heartbeat = setInterval(() => {
+        Object.values(node.wip).forEach((m) => {
+          if (m.didAck)
+            return;
+
+          m.working();
+        })
+      }, 5000);
+
+      node.on('close', async () => {
+        this.pending = 0;
+        this.wip = {};
+        clearInterval(heartbeat);
+        clearTimeout(timeoutID);
+        this.server.releaseClient(client);
+      });
     }
 
-	function initClient(node, client){
-		clearTimeout(timeoutID);
-		init(node, client)
-			.then(() => {
-				setStatus(node, 'connected');
-			})
-			.catch((e) => {
-				setStatus(node, 'error');
-				node.error(e);
+  function initClient(node, client){
+    clearTimeout(timeoutID);
+    init(node, client)
+      .then(() => {
+        setStatus(node, 'connected');
+      })
+      .catch((e) => {
+        setStatus(node, 'error');
+        node.error(e);
 
-				// retry
-				timeoutID = setTimeout(function(){
-					initClient(node, client);
-				}, 3000);
-			});
+        // retry
+        timeoutID = setTimeout(function(){
+          initClient(node, client);
+        }, 3000);
+      });
 
-	}
+  }
 
 	async function init(node, client) {
 
 		// Setup events
 		client.on('disconnect', () => {
+      node.log('disconnected');
 			setStatus(node, 'disconnected');
 		});
 
@@ -87,6 +91,13 @@ module.exports = function(RED) {
 			return;
 		}
 
+    // Preparing subjects
+    let subjects = node.config.subjects.split(',');
+    if (subjects.length == 0) {
+			node.error('require subjects');
+			return;
+    }
+
 		setStatus(node, 'initializing');
 
 		// Ensure stream
@@ -100,7 +111,7 @@ module.exports = function(RED) {
 			node.log('Initializing stream ' + streamNode.config.stream);
 
 			try {
-				await client.ensureStream(streamNode.config.stream, streamNode.config.subjects, streamNode.getOptions());
+				await client.ensureStream(streamNode.config.stream, subjects[0], streamNode.getOptions());
 			} catch(e) {
 				console.log('failed to initialize stream');
 				throw e;
@@ -114,7 +125,8 @@ module.exports = function(RED) {
 			startSeq: Number(node.config.startseq),
 			startTime: new Date(Number(node.config.starttime) * 1000),
 			ackWait: Number(node.config.ackwait),
-      maxMessages: Number(node.config.maxmessages) || 100,
+      maxWorkerPending: Number(node.config.maxworkerpending) || 1000,
+      maxDeliver: Number(node.config.maxDeliver) || -1,
 		};
 
 		if (node.config.consumertype !== 'ephemeral') {
@@ -150,7 +162,14 @@ module.exports = function(RED) {
 			node.log('subscribing to ' + node.config.subjects);
 
 			// Subscribe to subjects
-			let sub = await client.subscribe(node.config.subjects, opts, (m) => {
+			let sub = await client.subscribe(subjects, opts, (m) => {
+
+        if (node.pending >= node.config.maxWorkerPending) {
+          m.nak();
+          return;
+        }
+
+        node.pending++;
 
 				// Wait message until done
 				if (keepalive) {
@@ -195,7 +214,7 @@ module.exports = function(RED) {
 				} catch(e) {
 					node.error(m.seq);
 					node.error(e);
-					console.log(client.decode(m.data));
+					node.error(client.decode(m.data));
 				}
 
 				node.send(msg);
@@ -208,11 +227,15 @@ module.exports = function(RED) {
 			});
 
 			node.once('close', async () => {
-				sub.unsubscribe();
+        try {
+          await sub.unsubscribe();
+        } catch(e) {
+          node.error('Failed to unsubscribe for', node.config.subjects);
+        }
 			});
 
 		} catch(e) {
-			console.log('Failed to subscribe for', node.config.subjects);
+			node.error('Failed to subscribe for', node.config.subjects);
 			throw e;
 		}
 	}

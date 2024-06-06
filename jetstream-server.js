@@ -76,9 +76,9 @@ module.exports = function (RED) {
 		};
 
 
-                node.on('close', () => {
-                        clearTimeout(timeoutID);
-                });
+    node.on('close', () => {
+      clearTimeout(timeoutID);
+    });
 
 		function connect() {
                         clearTimeout(timeoutID);

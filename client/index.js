@@ -71,7 +71,7 @@ module.exports = class Client extends events.EventEmitter {
 				}
 			}
 		} catch(e) {
-			console.log(e);
+			console.error(e);
 		}
 	}
 
@@ -95,6 +95,7 @@ module.exports = class Client extends events.EventEmitter {
 
 			// Not found
 			if (e.code === '404') {
+				console.log('creating new stream', streamName);
 				return await this.createStream(streamName, subjects, opts);
 			}
 
@@ -140,7 +141,7 @@ module.exports = class Client extends events.EventEmitter {
 			}
 
 			if (updated) {
-				console.log('updating', streamName, consumerName);
+				console.log('updating consumer', consumerName);
 				await jsm.consumers.update(streamName, consumerName, info.config);
 			}
 			
@@ -152,6 +153,7 @@ module.exports = class Client extends events.EventEmitter {
 				opts.durable = consumerName;
 
 				// Not found, so trying to create consumer
+				console.log('creating new consumer', consumerName);
 				return await jsm.consumers.add(streamName, opts);
 			}
 
@@ -188,11 +190,28 @@ module.exports = class Client extends events.EventEmitter {
 		return sc.decode(data);
 	}
 
-	async subscribe(subject, opts = {}, callback) {
+	async subscribe(subjects = [], opts = {}, callback) {
 
 		// Preparing consumer options
 		let cOpts = nats.consumerOpts();
 		cOpts.deliverTo(nats.createInbox());
+
+    // Support multiple subjects
+    let subject = '';
+    if (Array.isArray(subjects)) {
+
+      if (subjects.length === 0) {
+        throw new Error('no subject has specified');
+      }
+
+      subject = subjects[0];
+      subjects.forEach((s) => {
+        cOpts.filterSubject(s);
+      });
+    } else {
+      subject = subjects;
+      cOpts.filterSubject(subject);
+    }
 
 		switch(opts.ack) {
 		case 'auto':
@@ -217,6 +236,9 @@ module.exports = class Client extends events.EventEmitter {
 		case 'all':
 			cOpts.deliverAll();
 			break;
+		case 'lastPerSubject':
+			cOpts.deliverLastPerSubject();
+			break;
 		case 'startSeq':
 			cOpts.startSequence(opts.startSeq || 1);
 			break;
@@ -225,7 +247,14 @@ module.exports = class Client extends events.EventEmitter {
 			break;
 		}
 
-    cOpts.maxMessages(opts.maxMessages || 100);
+    if (opts.maxDeliver > 0) {
+      cOpts.maxDeliver(opts.maxDeliver);
+    }
+
+    if (!opts.queue) {
+      cOpts.flowControl();
+      cOpts.idleHeartbeat(5000);
+    }
 
 		if (opts.ackWait) {
 			cOpts.ackWait(opts.ackWait || 10000);
@@ -255,8 +284,6 @@ module.exports = class Client extends events.EventEmitter {
 		// Subscribe
 		let js = this.nc.jetstream();
 		let sub = await js.subscribe(subject, cOpts);
-
-		console.log('[client]', subject, opts.durable);
 
 		(async () => {
 			for await (const m of sub) {
