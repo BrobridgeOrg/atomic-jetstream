@@ -29,6 +29,20 @@ module.exports = function(RED) {
         // Getting a client
         client = this.server.allocateClient();
 
+        // Setup events
+        client.on('disconnect', () => {
+          node.log('disconnected');
+          setStatus(node, 'disconnected');
+        });
+
+        client.on('reconnect', () => {
+          setStatus(node, 'connecting');
+        });
+
+        client.on('connected', () => {
+          setStatus(node, 'connected');
+        });
+
         initClient(node, client)
       });
 
@@ -59,7 +73,7 @@ module.exports = function(RED) {
         setStatus(node, 'connected');
       })
       .catch((e) => {
-        setStatus(node, 'error');
+        setStatus(node, 'error', e.toString());
         node.error(e);
 
         // retry
@@ -71,20 +85,6 @@ module.exports = function(RED) {
   }
 
 	async function init(node, client) {
-
-		// Setup events
-		client.on('disconnect', () => {
-      node.log('disconnected');
-			setStatus(node, 'disconnected');
-		});
-
-		client.on('reconnect', () => {
-			setStatus(node, 'connecting');
-		});
-
-		client.on('connected', () => {
-			setStatus(node, 'connected');
-		});
 
 		if (!node.config.subjects) {
 			node.error('require subjects');
@@ -111,9 +111,11 @@ module.exports = function(RED) {
 			node.log('Initializing stream ' + streamNode.config.stream);
 
 			try {
-				await client.ensureStream(streamNode.config.stream, subjects[0], streamNode.getOptions());
+				await client.ensureStream(streamNode.config.stream, streamNode.getOptions());
 			} catch(e) {
-				console.log('failed to initialize stream');
+        errMsg = 'failed to initialize stream'
+        setStatus(node, 'error', errMsg);
+				node.error(errMsg, e);
 				throw e;
 			}
 		}
@@ -230,65 +232,66 @@ module.exports = function(RED) {
         try {
           await sub.unsubscribe();
         } catch(e) {
-          node.error('Failed to unsubscribe for', node.config.subjects);
+          node.error('Failed to unsubscribe for ' + node.config.subjects);
         }
 			});
 
 		} catch(e) {
-			node.error('Failed to subscribe for', node.config.subjects);
+			node.error('Failed to subscribe for ' + node.config.subjects);
+      setStatus(node, 'error', 'Failed to subscribe');
 			throw e;
 		}
 	}
 
-	function setStatus(node, type) {
-		switch(type) {
-		case 'connected':
-			node.status({
-				fill: 'green',
-				shape: 'dot',
-				text: 'connected'
-			});
-			break;
-		case 'connecting':
-			node.status({
-				fill: 'yellow',
-				shape: 'ring',
-				text: 'connecting'
-			});
-			break;
-		case 'initializing':
-			node.status({
-				fill: 'yellow',
-				shape: 'ring',
-				text: 'initializing'
-			});
-			break;
-		case 'error':
-			node.status({
-				fill: 'red',
-				shape: 'ring',
-				text: 'error'
-			});
-			break;
-		case 'disconnected':
-			node.status({
-				fill: 'red',
-				shape: 'ring',
-				text: 'disconnected'
-			});
-			break;
-		case 'receiving':
-			node.status({
-				fill: 'blue',
-				shape: 'ring',
-				text: 'receiving'
-			});
-			break;
-		}
-	}
+  function setStatus(node, type, message) {
+    switch(type) {
+      case 'connected':
+        node.status({
+          fill: 'green',
+          shape: 'dot',
+          text: 'connected'
+        });
+        break;
+      case 'connecting':
+        node.status({
+          fill: 'yellow',
+          shape: 'ring',
+          text: 'connecting'
+        });
+        break;
+      case 'initializing':
+        node.status({
+          fill: 'yellow',
+          shape: 'ring',
+          text: 'initializing'
+        });
+        break;
+      case 'error':
+        node.status({
+          fill: 'red',
+          shape: 'ring',
+          text: message || 'error'
+        });
+        break;
+      case 'disconnected':
+        node.status({
+          fill: 'red',
+          shape: 'ring',
+          text: 'disconnected'
+        });
+        break;
+      case 'receiving':
+        node.status({
+          fill: 'blue',
+          shape: 'ring',
+          text: 'receiving'
+        });
+        break;
+    }
+  }
 
-    RED.nodes.registerType('NATS JetStream Consumer', ConsumerNode, {
-		credentials: {
-		}
-	});
+  RED.nodes.registerType('NATS JetStream Consumer', ConsumerNode, {
+    credentials: {
+    }
+  });
 }
