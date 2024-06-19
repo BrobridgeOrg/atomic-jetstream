@@ -121,9 +121,18 @@ module.exports = class Client extends events.EventEmitter {
 
     let streamName = null;
     for (let subject of subjects) {
-      streamName = await this.findStreamBySubject(subject)
-      if (!streamName) {
+      let found = await this.findStreamBySubject(subject)
+      if (!found) {
         return null;
+      }
+
+      if (!streamName) {
+        streamName = found;
+        continue
+      }
+
+      if (streamName !== found) {
+        throw new Error('multiple streams found by subjects');
       }
     }
 
