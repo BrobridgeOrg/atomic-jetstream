@@ -119,22 +119,10 @@ module.exports = class Client extends events.EventEmitter {
 
 	async findStreamBySubjects(subjects = []) {
 
-    let streamName = await this.findStreamBySubject(subjects[0])
-
-    if (!streamName) {
-      return null;
-    }
-
-    let jsm = await this.nc.jetstreamManager();
-
-    let stream = await jsm.streams.info(streamName);
-    if (!stream) {
-      return null;
-    }
-
-    // Check if stream contains specific subjects
+    let streamName = null;
     for (let subject of subjects) {
-      if (stream.config.subjects.indexOf(subject) == -1) {
+      streamName = await this.findStreamBySubject(subject)
+      if (!streamName) {
         return null;
       }
     }
