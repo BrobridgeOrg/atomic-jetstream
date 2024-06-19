@@ -101,6 +101,7 @@ module.exports = function(RED) {
 		setStatus(node, 'initializing');
 
 		// Ensure stream
+    let targetStream = null;
 		if (node.config.stream === 'ensure') {
 
 			let streamNode = RED.nodes.getNode(node.config.ensurestream);
@@ -118,10 +119,13 @@ module.exports = function(RED) {
 				node.error(errMsg, e);
 				throw e;
 			}
+
+      targetStream = streamNode.config.stream;
 		}
 
 		// Preparing consumer options
 		let opts = {
+      stream: targetStream || null,
 			delivery: node.config.delivery || 'last',
 			ack: node.config.ack || 'auto',
 			startSeq: Number(node.config.startseq),

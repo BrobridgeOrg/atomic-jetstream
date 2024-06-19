@@ -183,27 +183,37 @@ module.exports = class Client extends events.EventEmitter {
       }
 
 			if (updated) {
-				console.warn('updating consumer', consumerName);
+				console.warn('updating consumer (durable=' + consumerName + ')');
 				await jsm.consumers.update(streamName, consumerName, info.config);
 			}
+
+      return;
 			
 		} catch(e) {
-
 			if (e.code !== '404') {
         throw e;
       }
+		}
 
-			// Not found
+    try {
+      // Not found consumer so creating new one
       opts.durable(consumerName);
 
       let cOpts = opts.getOpts();
 
       // Not found, so trying to create consumer
-      console.log('creating new consumer', consumerName, cOpts.config.filter_subjects || cOpts.config.deliver_subject);
-
+      console.log('attempt to create new consumer (durable=' + consumerName + ')', cOpts.config.filter_subjects || cOpts.config.deliver_subject);
       await jsm.consumers.add(streamName, cOpts.config);
-      console.log('consumer was created', consumerName);
-		}
+      console.log('consumer was created (durable=' + consumerName + ')');  
+    } catch(e) {
+			if (e.code === '400' && e.api_error.err_code === 10148) {
+        console.log('consumer already exists (durable=' + consumerName + ')');  
+        return;
+      }
+
+      throw e;
+    }
+
 	}
 
 	async publish(subject, payload) {
@@ -311,14 +321,19 @@ module.exports = class Client extends events.EventEmitter {
 		if (opts.queue && opts.durable) {
 			cOpts.queue(opts.durable);
 
-			// Find stream by subject
-      let stream = await this.findStreamBySubjects(subjects);
-      if (!stream) {
+      let streamName = opts.stream;
+
+      if (!streamName) {
+        // Find stream by subject
+        streamName = await this.findStreamBySubjects(subjects);
+      }
+
+      if (!streamName) {
         throw new Error('no stream has specified subject');
       }
 
 			// ensure consumer
-			await this.ensureConsumer(stream, opts.durable, cOpts);
+			await this.ensureConsumer(streamName, opts.durable, cOpts);
 		}
 
 		// Subscribe
