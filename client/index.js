@@ -251,6 +251,20 @@ module.exports = class Client extends events.EventEmitter {
 		let cOpts = nats.consumerOpts();
 		cOpts.deliverTo(nats.createInbox());
 
+    // Preparing stream
+    let streamName = opts.stream;
+    if (!streamName) {
+      // Find stream by subject
+      streamName = await this.findStreamBySubjects(subjects);
+    }
+
+    if (!streamName) {
+      throw new Error('no stream has specified subject');
+    }
+
+    cOpts.bindStream(streamName);
+
+    // Preparing subjects
     if (!Array.isArray(subjects)) {
       subjects = [subjects];
     }
@@ -320,17 +334,6 @@ module.exports = class Client extends events.EventEmitter {
 
 		if (opts.queue && opts.durable) {
 			cOpts.queue(opts.durable);
-
-      let streamName = opts.stream;
-
-      if (!streamName) {
-        // Find stream by subject
-        streamName = await this.findStreamBySubjects(subjects);
-      }
-
-      if (!streamName) {
-        throw new Error('no stream has specified subject');
-      }
 
 			// ensure consumer
 			await this.ensureConsumer(streamName, opts.durable, cOpts);
