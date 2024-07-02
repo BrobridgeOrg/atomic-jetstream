@@ -36,6 +36,8 @@ module.exports = class Client extends events.EventEmitter {
 	async connect() {
 		let opts = {
 			servers: this.opts.servers,
+			user: this.opts.user,
+			pass: this.opts.password,
 			maxPingOut: this.opts.maxPingOut,
 			maxReconnectAttempts: this.opts.maxReconnectAttempts,
 			pingInterval: this.opts.pingInterval,
