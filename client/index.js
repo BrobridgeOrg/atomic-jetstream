@@ -29,6 +29,10 @@ module.exports = class Client extends events.EventEmitter {
 		return new Client(this.nc, this.opts);
 	}
 
+  compareArrary(arr1, arr2) {
+    return arr1.length === arr2.length && arr1.every((v, i) => v === arr2[i]);
+  }
+
 	async connect() {
 		let opts = {
 			servers: this.opts.servers,
@@ -73,21 +77,24 @@ module.exports = class Client extends events.EventEmitter {
 				}
 			}
 		} catch(e) {
-			console.log(e);
+			console.error(e);
 		}
 	}
 
-	async createStream(streamName, subjects = [], opts = {}) {
+	async createStream(streamName, opts = {}) {
 
 		let jsm = await this.nc.jetstreamManager();
 
-		await jsm.streams.add(Object.assign(opts, {
-			name: streamName,
-			subjects: subjects
-		}));
+		try {
+      await jsm.streams.add(Object.assign(opts, {
+        name: streamName,
+      }));
+    } catch(e) {
+      throw e;
+    }
 	}
 
-	async ensureStream(streamName, subjects = [], opts = {}) {
+	async ensureStream(streamName, opts = {}) {
 
 		let jsm = await this.nc.jetstreamManager();
 
@@ -97,7 +104,8 @@ module.exports = class Client extends events.EventEmitter {
 
 			// Not found
 			if (e.code === '404') {
-				return await this.createStream(streamName, subjects, opts);
+				console.log('creating new stream', streamName);
+				return await this.createStream(streamName, opts);
 			}
 
 			throw e;
@@ -108,11 +116,29 @@ module.exports = class Client extends events.EventEmitter {
 
 		let jsm = await this.nc.jetstreamManager();
 
-		try {
-			return await jsm.streams.find(subject)
-		} catch(e) {
-			throw e;
-		}
+    return await jsm.streams.find(subject)
+	}
+
+	async findStreamBySubjects(subjects = []) {
+
+    let streamName = null;
+    for (let subject of subjects) {
+      let found = await this.findStreamBySubject(subject)
+      if (!found) {
+        return null;
+      }
+
+      if (!streamName) {
+        streamName = found;
+        continue
+      }
+
+      if (streamName !== found) {
+        throw new Error('multiple streams found by subjects');
+      }
+    }
+
+    return streamName;
 	}
 
 	async ensureConsumer(streamName, consumerName, opts = {}) {
@@ -124,41 +150,72 @@ module.exports = class Client extends events.EventEmitter {
 
 			// Check consumer confiuration or update
 			let updated = false;
-			for (let k in opts) {
+			for (let k in opts.config) {
 
-				if (k === 'name') {
-					continue;
-				}
-
-				if (k === 'deliver_subject') {
-					continue;
-				}
+        switch(k) {
+        case 'name':
+        case 'deliver_subject':
+        case 'filter_subjects':
+        case 'filter_subject':
+            continue;
+        }
 
 				// Something's updated
-				if (opts[k] != info.config[k]) {
-					info.config[k] = opts[k];
+				if (opts.config[k] != info.config[k]) {
+          console.warn('consumer config(' + k + ') has changed', opts.config[k], info.config[k]);
+					info.config[k] = opts.config[k];
 					updated = true;
 				}
 			}
 
+      // Check filters
+      let origFilters = info.config.filter_subjects || [ info.config.filter_subject ];
+      if (!this.compareArrary(opts.filters, origFilters)) {
+
+        if (opts.filters.length == 1) {
+          info.config.filter_subject = opts.filters[0];
+          info.config.filter_subjects = undefined;
+        } else {
+          info.config.filter_subject = undefined;
+          info.config.filter_subjects = opts.filters;
+        }
+
+        console.warn('consumer config(filter_subjects) has changed', origFilters, 'to', opts.filters);
+        updated = true;
+      }
+
 			if (updated) {
-				console.log('updating', streamName, consumerName);
+				console.warn('updating consumer (durable=' + consumerName + ')');
 				await jsm.consumers.update(streamName, consumerName, info.config);
 			}
+
+      return;
 			
 		} catch(e) {
-
-			// Not found
-			if (e.code === '404') {
-
-				opts.durable = consumerName;
-
-				// Not found, so trying to create consumer
-				return await jsm.consumers.add(streamName, opts);
-			}
-
-			throw e;
+			if (e.code !== '404') {
+        throw e;
+      }
 		}
+
+    try {
+      // Not found consumer so creating new one
+      opts.durable(consumerName);
+
+      let cOpts = opts.getOpts();
+
+      // Not found, so trying to create consumer
+      console.log('attempt to create new consumer (durable=' + consumerName + ')', cOpts.config.filter_subjects || cOpts.config.deliver_subject);
+      await jsm.consumers.add(streamName, cOpts.config);
+      console.log('consumer was created (durable=' + consumerName + ')');  
+    } catch(e) {
+			if (e.code === '400' && e.api_error.err_code === 10148) {
+        console.log('consumer already exists (durable=' + consumerName + ')');  
+        return;
+      }
+
+      throw e;
+    }
+
 	}
 
 	async publish(subject, payload) {
@@ -190,11 +247,37 @@ module.exports = class Client extends events.EventEmitter {
 		return sc.decode(data);
 	}
 
-	async subscribe(subject, opts = {}, callback) {
+	async subscribe(subjects = [], opts = {}, callback) {
 
 		// Preparing consumer options
 		let cOpts = nats.consumerOpts();
 		cOpts.deliverTo(nats.createInbox());
+
+    // Preparing stream
+    let streamName = opts.stream;
+    if (!streamName) {
+      // Find stream by subject
+      streamName = await this.findStreamBySubjects(subjects);
+    }
+
+    if (!streamName) {
+      throw new Error('no stream has specified subject');
+    }
+
+    cOpts.bindStream(streamName);
+
+    // Preparing subjects
+    if (!Array.isArray(subjects)) {
+      subjects = [subjects];
+    }
+
+    if (subjects.length === 0) {
+      throw new Error('no subject has specified');
+    }
+
+    subjects.forEach((subject) => {
+      cOpts.filterSubject(subject);
+    });
 
 		switch(opts.ack) {
 		case 'auto':
@@ -219,6 +302,9 @@ module.exports = class Client extends events.EventEmitter {
 		case 'all':
 			cOpts.deliverAll();
 			break;
+		case 'lastPerSubject':
+			cOpts.deliverLastPerSubject();
+			break;
 		case 'startSeq':
 			cOpts.startSequence(opts.startSeq || 1);
 			break;
@@ -226,6 +312,15 @@ module.exports = class Client extends events.EventEmitter {
 			cOpts.startTime(opts.startTime || new Date());
 			break;
 		}
+
+    if (opts.maxDeliver > 0) {
+      cOpts.maxDeliver(opts.maxDeliver);
+    }
+
+    if (!opts.queue) {
+      cOpts.flowControl();
+      cOpts.idleHeartbeat(5000);
+    }
 
 		if (opts.ackWait) {
 			cOpts.ackWait(opts.ackWait || 10000);
@@ -242,21 +337,13 @@ module.exports = class Client extends events.EventEmitter {
 		if (opts.queue && opts.durable) {
 			cOpts.queue(opts.durable);
 
-			// Find stream by subject
-			let stream = await this.findStreamBySubject(subject);
-			if (!stream) {
-				throw new Error('no stream has specified subject');
-			}
-
 			// ensure consumer
-			await this.ensureConsumer(stream, opts.durable, cOpts.config);
+			await this.ensureConsumer(streamName, opts.durable, cOpts);
 		}
 
 		// Subscribe
 		let js = this.nc.jetstream();
-		let sub = await js.subscribe(subject, cOpts);
-
-		console.log('[client]', subject, opts.durable);
+		let sub = await js.subscribe(subjects[0], cOpts);
 
 		(async () => {
 			for await (const m of sub) {

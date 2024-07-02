@@ -53,6 +53,12 @@
 			ackwait: {
 				value: 10000,
 			},
+			maxworkerpending: {
+				value: 1000,
+			},
+			maxdeliver: {
+				value: -1,
+			},
 			payloadType: {
 				value: "json",
 				required: true
@@ -79,16 +85,17 @@
 				}
 			}
 
-			updateStreamOptions();
-            $("#node-input-stream").on("change", function() {
-				updateStreamOptions();
-            });
+      updateStreamOptions();
+      $("#node-input-stream").on("change", function() {
+        updateStreamOptions();
+      });
 
 			// Consumer type
 			function updateConsumerType() {
 				switch($('#node-input-consumertype').val()) {
 				case 'ephemeral':
 					$('#node-row-durable').hide();
+					$('#node-row-maxworkerpending').hide();
 					$('#node-input-ack').prop('disabled', false)
 					break;
 				case 'queueGroup':
@@ -98,11 +105,13 @@
 						.val('manual')
 						.change();
 					$('#node-row-durable').show();
+					$('#node-row-maxworkerpending').show();
 					break;
 				default:
 					$('#node-input-ack').prop('disabled', false)
 
 					$('#node-row-durable').show();
+					$('#node-row-maxworkerpending').hide();
 				}
 			}
 
@@ -192,42 +201,50 @@
 		<label for="node-input-subjects" style="width: 130px"><i class="fa fa-hashtag"></i> Subjects</label>
 		<input type="text" id="node-input-subjects" placeholder="(empty)">
 	</div>
-	<div class="form-row">
-        <label for="node-input-consumertype" style="width: 130px"><i class="fa fa-sitemap"></i> Type</label>
-		<select id="node-input-consumertype" style='width:70%'>
-			<option value="ephemeral">Ephemeral</option>
-			<option value="durable">Durable</option>
-			<option value="queueGroup">Queue Group</option>
-		</select>
-		<div id="node-row-durable" style="margin-left: 30px; margin-top: 10px;" class="hide">
-			<div class="form-row">
-				<label for="node-input-durable"><i class="fa fa-tag"></i> Durable</label>
-				<input type="text" id="node-input-durable">
-			</div>
-		</div>
+  <div class="form-row">
+    <label for="node-input-consumertype" style="width: 130px"><i class="fa fa-sitemap"></i> Type</label>
+    <select id="node-input-consumertype" style='width:70%'>
+      <option value="ephemeral">Ephemeral</option>
+      <option value="durable">Durable</option>
+      <option value="queueGroup">Queue Group</option>
+    </select>
+    <div id="node-row-durable" style="margin-left: 30px; margin-top: 10px;" class="hide">
+      <div class="form-row">
+        <label for="node-input-durable">Durable</label>
+        <input type="text" id="node-input-durable">
+      </div>
     </div>
-	<div class="form-row">
-        <label for="node-input-delivery" style="width: 130px"><i class="fa fa-play"></i> Delivery Options</label>
-		<select id="node-input-delivery" style='width:70%'>
-			<option value="last">Last</option>
-			<option value="new">New</option>
-			<option value="all">All</option>
-			<option value="startSeq">Start Sequence</option>
-			<option value="startTime">Start Time</option>
-		</select>
-		<div id="node-row-startseq" style="margin-left: 30px; margin-top: 10px;" class="hide">
-			<div class="form-row">
-				<label for="node-input-startseq"><i class="fa fa-map-marker"></i> Sequence</label>
-				<input type="text" id="node-input-startseq" style="width:100px" placeholder="0">
-			</div>
-		</div>
-		<div id="node-row-starttime" style="margin-left: 30px; margin-top: 10px;" class="hide">
-			<div class="form-row">
-				<label for="node-input-starttime"><i class="fa fa-history"></i> Timestamp</label>
-				<input type="text" id="node-input-starttime" style="width:100px" placeholder="0">
-			</div>
-		</div>
+
+    <div id="node-row-maxworkerpending" style="margin-left: 30px; margin-top: 10px;" class="hide">
+      <div class="form-row">
+        <label for="node-input-maxworkerpending">Max Pending</label>
+        <input type="text" id="node-input-maxworkerpending" style="width:100px" placeholder="1000"> message(s) per worker
+      </div>
     </div>
+  </div>
+
+  <div class="form-row">
+    <label for="node-input-delivery" style="width: 130px"><i class="fa fa-play"></i> Start At</label>
+    <select id="node-input-delivery" style='width:70%'>
+      <option value="last">Last</option>
+      <option value="new">New</option>
+      <option value="all">All</option>
+      <option value="startSeq">Start Sequence</option>
+      <option value="startTime">Start Time</option>
+    </select>
+    <div id="node-row-startseq" style="margin-left: 30px; margin-top: 10px;" class="hide">
+      <div class="form-row">
+        <label for="node-input-startseq"><i class="fa fa-map-marker"></i> Sequence</label>
+        <input type="text" id="node-input-startseq" style="width:100px" placeholder="0">
+      </div>
+    </div>
+    <div id="node-row-starttime" style="margin-left: 30px; margin-top: 10px;" class="hide">
+      <div class="form-row">
+        <label for="node-input-starttime"><i class="fa fa-history"></i> Timestamp</label>
+        <input type="text" id="node-input-starttime" style="width:100px" placeholder="0">
+      </div>
+    </div>
+  </div>
 	<div class="form-row">
         <label for="node-input-ack" style="width: 130px"><i class="fa fa-check-circle"></i> Acknowledge</label>
 		<select id="node-input-ack" style='width:70%'>
@@ -245,6 +262,17 @@
 			</div>
 		</div>
     </div>
+
+  <div class="form-row">
+    <label for="node-input-client-opts" style="width: 100%"><i class="fa fa-sliders"></i> Advanced Options</label>
+    <div style="margin-left: 30px; margin-top: 10px;">
+      <div class="form-row">
+        <label for="node-input-maxdeliver"><i class="fa fa-comments"></i> Max Deliver</label>
+        <input type="text" id="node-input-maxdeliver" style="width:100px" placeholder="-1">
+      </div>
+    </div>
+  </div>
+
 	<div class="form-row">
         <label for="node-input-payloadType" style="width: 130px"><i class="fa fa-stack-exchange"></i> Payload Type</label>
 		<select id="node-input-payloadType" style='width:70%'>
